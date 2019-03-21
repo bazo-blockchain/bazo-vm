@@ -1175,6 +1175,10 @@ func (vm *VM) PopUnsignedBigInt(opCode OpCode) (bigInt big.Int, err error) {
 	return result, err
 }
 
+func (vm *VM) PeekResult() (element []byte, err error) {
+	return vm.evaluationStack.PeekBytes()
+}
+
 func (vm *VM) GetErrorMsg() string {
 	tos, err := vm.evaluationStack.PeekBytes()
 	if err != nil {
