@@ -129,6 +129,45 @@ func TestVM_Exec_PushChar_Invalid(t *testing.T) {
 	assert.Equal(t, string(tos), "pushchar: invalid ASCII code 128")
 }
 
+func TestVM_Exec_PushStr_Empty(t *testing.T) {
+	code := []byte{
+		PushStr, 0, // ""
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos)
+}
+
+func TestVM_Exec_PushStr(t *testing.T) {
+	code := []byte{
+		PushStr, 5, 104, 101, 108, 108, 111, // "hello"
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "hello")
+}
+
+func TestVM_Exec_PushStr_Invalid(t *testing.T) {
+	code := []byte{
+		PushStr, 5, 104, 101, 200, 108, 111, // "hello"
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "pushstr: invalid ASCII code 200")
+}
+
 func TestVM_Exec_Addition(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 125,

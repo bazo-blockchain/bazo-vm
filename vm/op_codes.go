@@ -82,7 +82,7 @@ var OpCodes = []OpCode{
 	{PushInt, "pushint", 1, []int{BYTES}, 1, 1},
 	{PushBool, "pushbool", 1, []int{BYTE}, 1, 1},
 	{PushChar, "pushchar", 1, []int{BYTE}, 1, 1},
-	{PushStr, "puchstr", 1, []int{BYTES}, 1, 1},
+	{PushStr, "pushstr", 1, []int{BYTES}, 1, 1},
 	{Push, "push", 1, []int{BYTES}, 1, 1},
 	{Dup, "dup", 0, nil, 1, 2},
 	{Roll, "roll", 1, []int{BYTE}, 1, 2},

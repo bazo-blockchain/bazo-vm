@@ -211,6 +211,26 @@ func (vm *VM) Exec(trace bool) bool {
 			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
+		case PushStr:
+			length, errArg1 := vm.fetch(opCode.Name)
+			bytes, errArg2 := vm.fetchMany(opCode.Name, int(length))
+
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
+				return false
+			}
+
+			for _, charCode := range bytes {
+				if charCode > 127 {
+					_ = vm.evaluationStack.Push([]byte(
+						fmt.Sprintf("%s: invalid ASCII code %v", opCode.Name, charCode)))
+					return false
+				}
+			}
+
+			err = vm.evaluationStack.Push(bytes)
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
 		case Dup:
 			tos, err := vm.PopBytes(opCode)
 
