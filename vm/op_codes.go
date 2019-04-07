@@ -1,60 +1,61 @@
 package vm
 
+// Supported Bazo OpCodes.
 const (
-	PUSH = iota
-	DUP
-	ROLL
-	POP
-	ADD
-	SUB
-	MULT
-	DIV
-	MOD
-	NEG
-	EQ
-	NEQ
-	LT
-	GT
-	LTE
-	GTE
-	SHIFTL
-	SHIFTR
-	NOP
-	JMP
-	JMPIF
-	CALL
-	CALLIF
-	CALLEXT
-	RET
-	SIZE
-	STORE
-	SSTORE
-	LOAD
-	SLOAD
-	ADDRESS // Address of account
-	ISSUER  // Owner of smart contract account
-	BALANCE // Balance of account
-	CALLER
-	CALLVAL  // Amount of bazo coins transacted in transaction
-	CALLDATA // Parameters and function signature hash
-	NEWMAP
-	MAPHASKEY
-	MAPPUSH
-	MAPGETVAL
-	MAPSETVAL
-	MAPREMOVE
-	NEWARR
-	ARRAPPEND
-	ARRINSERT
-	ARRREMOVE
-	ARRAT
+	PushI = iota
+	Dup
+	Roll
+	Pop
+	Add
+	Sub
+	Mul
+	Div
+	Mod
+	Neg
+	Eq
+	NotEq
+	Lt
+	Gt
+	LtEq
+	GtEq
+	ShiftL
+	ShiftR
+	NoOp
+	Jmp
+	JmpTrue
+	Call
+	CallTrue
+	CallExt
+	Ret
+	Size
+	StoreLoc
+	StoreSt
+	LoadLoc
+	LoadSt
+	Address // Address of account
+	Issuer  // Owner of smart contract account
+	Balance // Balance of account
+	Caller
+	CallVal  // Amount of bazo coins transacted in transaction
+	CallData // Parameters and function signature hash
+	NewMap
+	MapHasKey
+	MapPush
+	MapGetVal
+	MapSetVal
+	MapRemove
+	NewArr
+	ArrAppend
+	ArrInsert
+	ArrRemove
+	ArrAt
 	SHA3
-	CHECKSIG
-	ERRHALT
-	HALT
-	//	MAPCONTAINSKEY
+	CheckSig
+	ErrHalt
+	Halt
 )
 
+// Supported OpCode argument types
 const (
 	BYTES = iota + 1
 	BYTE
@@ -62,6 +63,7 @@ const (
 	ADDR
 )
 
+// OpCode contains the code, name, number of arguments, argument types, gas price and gas factor of the opcode
 type OpCode struct {
 	code      byte
 	Name      string
@@ -71,56 +73,57 @@ type OpCode struct {
 	gasFactor uint64
 }
 
+// OpCodes contains all OpCode definitions
 var OpCodes = []OpCode{
-	{PUSH, "push", 1, []int{BYTES}, 1, 1},
-	{DUP, "dup", 0, nil, 1, 2},
-	{ROLL, "roll", 1, []int{BYTE}, 1, 2},
-	{POP, "pop", 0, nil, 1, 1},
-	{ADD, "add", 0, nil, 1, 2},
-	{SUB, "sub", 0, nil, 1, 2},
-	{MULT, "mult", 0, nil, 1, 2},
-	{DIV, "div", 0, nil, 1, 2},
-	{MOD, "mod", 0, nil, 1, 2},
-	{NEG, "neg", 0, nil, 1, 2},
-	{EQ, "eq", 0, nil, 1, 2},
-	{NEQ, "neq", 0, nil, 1, 2},
-	{LT, "lt", 0, nil, 1, 2},
-	{GT, "gt", 0, nil, 1, 2},
-	{LTE, "lte", 0, nil, 1, 2},
-	{GTE, "gte", 0, nil, 1, 2},
-	{SHIFTL, "shiftl", 1, []int{BYTE}, 1, 2},
-	{SHIFTR, "shiftl", 1, []int{BYTE}, 1, 2},
-	{NOP, "nop", 0, nil, 1, 1},
-	{JMP, "jmp", 1, []int{LABEL}, 1, 1},
-	{JMPIF, "jmpif", 1, []int{LABEL}, 1, 1},
-	{CALL, "call", 2, []int{LABEL, BYTE}, 1, 1},
-	{CALLIF, "callif", 2, []int{LABEL, BYTE}, 1, 1},
-	{CALLEXT, "callext", 3, []int{ADDR, BYTE, BYTE, BYTE, BYTE, BYTE}, 1000, 2},
-	{RET, "ret", 0, nil, 1, 1},
-	{SIZE, "size", 0, nil, 1, 1},
-	{STORE, "store", 0, nil, 1, 2},
-	{SSTORE, "sstore", 1, []int{BYTE}, 1000, 2},
-	{LOAD, "load", 1, []int{BYTE}, 1, 2},
-	{SLOAD, "sload", 1, []int{BYTE}, 10, 2},
-	{ADDRESS, "address", 0, nil, 1, 1},
-	{ISSUER, "issuer", 0, nil, 1, 1},
-	{BALANCE, "balance", 0, nil, 1, 1},
-	{CALLER, "caller", 0, nil, 1, 1},
-	{CALLVAL, "callval", 0, nil, 1, 1},
-	{CALLDATA, "calldata", 0, nil, 1, 1},
-	{NEWMAP, "newmap", 0, nil, 1, 2},
-	{MAPHASKEY, "maphaskey", 0, nil, 1, 2},
-	{MAPPUSH, "mappush", 0, nil, 1, 2},
-	{MAPGETVAL, "mapgetval", 0, nil, 1, 2},
-	{MAPSETVAL, "mapsetval", 0, nil, 1, 2},
-	{MAPREMOVE, "mapremove", 0, nil, 1, 2},
-	{NEWARR, "newarr", 0, nil, 1, 2},
-	{ARRAPPEND, "arrappend", 0, nil, 1, 2},
-	{ARRINSERT, "arrinsert", 0, nil, 1, 2},
-	{ARRREMOVE, "arrremove", 0, nil, 1, 2},
-	{ARRAT, "arrat", 0, nil, 1, 2},
+	{PushI, "push", 1, []int{BYTES}, 1, 1},
+	{Dup, "dup", 0, nil, 1, 2},
+	{Roll, "roll", 1, []int{BYTE}, 1, 2},
+	{Pop, "pop", 0, nil, 1, 1},
+	{Add, "add", 0, nil, 1, 2},
+	{Sub, "sub", 0, nil, 1, 2},
+	{Mul, "mult", 0, nil, 1, 2},
+	{Div, "div", 0, nil, 1, 2},
+	{Mod, "mod", 0, nil, 1, 2},
+	{Neg, "neg", 0, nil, 1, 2},
+	{Eq, "eq", 0, nil, 1, 2},
+	{NotEq, "neq", 0, nil, 1, 2},
+	{Lt, "lt", 0, nil, 1, 2},
+	{Gt, "gt", 0, nil, 1, 2},
+	{LtEq, "lte", 0, nil, 1, 2},
+	{GtEq, "gte", 0, nil, 1, 2},
+	{ShiftL, "shiftl", 1, []int{BYTE}, 1, 2},
+	{ShiftR, "shiftl", 1, []int{BYTE}, 1, 2},
+	{NoOp, "nop", 0, nil, 1, 1},
+	{Jmp, "jmp", 1, []int{LABEL}, 1, 1},
+	{JmpTrue, "jmpif", 1, []int{LABEL}, 1, 1},
+	{Call, "call", 2, []int{LABEL, BYTE}, 1, 1},
+	{CallTrue, "callif", 2, []int{LABEL, BYTE}, 1, 1},
+	{CallExt, "callext", 3, []int{ADDR, BYTE, BYTE, BYTE, BYTE, BYTE}, 1000, 2},
+	{Ret, "ret", 0, nil, 1, 1},
+	{Size, "size", 0, nil, 1, 1},
+	{StoreLoc, "store", 0, nil, 1, 2},
+	{StoreSt, "sstore", 1, []int{BYTE}, 1000, 2},
+	{LoadLoc, "load", 1, []int{BYTE}, 1, 2},
+	{LoadSt, "sload", 1, []int{BYTE}, 10, 2},
+	{Address, "address", 0, nil, 1, 1},
+	{Issuer, "issuer", 0, nil, 1, 1},
+	{Balance, "balance", 0, nil, 1, 1},
+	{Caller, "caller", 0, nil, 1, 1},
+	{CallVal, "callval", 0, nil, 1, 1},
+	{CallData, "calldata", 0, nil, 1, 1},
+	{NewMap, "newmap", 0, nil, 1, 2},
+	{MapHasKey, "maphaskey", 0, nil, 1, 2},
+	{MapPush, "mappush", 0, nil, 1, 2},
+	{MapGetVal, "mapgetval", 0, nil, 1, 2},
+	{MapSetVal, "mapsetval", 0, nil, 1, 2},
+	{MapRemove, "mapremove", 0, nil, 1, 2},
+	{NewArr, "newarr", 0, nil, 1, 2},
+	{ArrAppend, "arrappend", 0, nil, 1, 2},
+	{ArrInsert, "arrinsert", 0, nil, 1, 2},
+	{ArrRemove, "arrremove", 0, nil, 1, 2},
+	{ArrAt, "arrat", 0, nil, 1, 2},
 	{SHA3, "sha3", 0, nil, 1, 2},
-	{CHECKSIG, "checksig", 0, nil, 1, 2},
-	{ERRHALT, "errhalt", 0, nil, 0, 1},
-	{HALT, "halt", 0, nil, 0, 1},
+	{CheckSig, "checksig", 0, nil, 1, 2},
+	{ErrHalt, "errhalt", 0, nil, 0, 1},
+	{Halt, "halt", 0, nil, 0, 1},
 }
