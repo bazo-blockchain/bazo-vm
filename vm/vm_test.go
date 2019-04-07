@@ -90,6 +90,45 @@ func TestVM_Exec_PushBool(t *testing.T) {
 	assertBytes(t, tos, 0)
 }
 
+func TestVM_Exec_PushBool_Invalid(t *testing.T) {
+	code := []byte{
+		PushBool, 5,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "pushbool: invalid bool value 5")
+}
+
+func TestVM_Exec_PushChar(t *testing.T) {
+	code := []byte{
+		PushChar, 104, // 'h'
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 104)
+}
+
+func TestVM_Exec_PushChar_Invalid(t *testing.T) {
+	code := []byte{
+		PushChar, 128,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "pushchar: invalid ASCII code 128")
+}
+
 func TestVM_Exec_Addition(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 125,
