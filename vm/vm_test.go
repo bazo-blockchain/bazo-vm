@@ -168,6 +168,45 @@ func TestVM_Exec_PushStr_Invalid(t *testing.T) {
 	assert.Equal(t, string(tos), "pushstr: invalid ASCII code 200")
 }
 
+func TestVM_Exec_Push_Empty(t *testing.T) {
+	code := []byte{
+		Push, 0, // []
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos)
+}
+
+func TestVM_Exec_Push(t *testing.T) {
+	code := []byte{
+		Push, 2, 128, 255, // [128, 255]
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 128, 255)
+}
+
+func TestVM_Exec_Push_InvalidLength(t *testing.T) {
+	code := []byte{
+		Push, 2, 128, // [128]
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "push: Instruction set out of bounds")
+}
+
 func TestVM_Exec_Addition(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 125,
