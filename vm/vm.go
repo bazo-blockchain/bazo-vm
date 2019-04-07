@@ -123,7 +123,6 @@ func (vm *VM) trace() {
 }
 
 func (vm *VM) Exec(trace bool) bool {
-
 	vm.code = vm.context.GetContract()
 	vm.fee = vm.context.GetFee()
 
@@ -163,7 +162,7 @@ func (vm *VM) Exec(trace bool) bool {
 		// Decode
 		switch opCode.code {
 
-		case PushI:
+		case PushInt:
 			arg, errArg1 := vm.fetch(opCode.Name)
 			byteCount := int(arg) + 1 // Amount of bytes pushed, maximum amount of bytes that can be pushed is 256
 			bytes, errArg2 := vm.fetchMany(opCode.Name, byteCount)
@@ -175,7 +174,24 @@ func (vm *VM) Exec(trace bool) bool {
 			err = vm.evaluationStack.Push(bytes)
 
 			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+		case PushBool:
+			boolValue, err := vm.fetch(opCode.Name)
+
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
+
+			if boolValue > 1 {
+				_ = vm.evaluationStack.Push([]byte(
+					fmt.Sprintf("%s: invalid bool value %v", opCode.Name, boolValue)))
+				return false
+			}
+
+			err = vm.evaluationStack.Push([]byte{boolValue})
+			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
 
