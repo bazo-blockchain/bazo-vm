@@ -1087,9 +1087,9 @@ func TestVM_Exec_Calldata(t *testing.T) {
 	mc.Fee = 50
 
 	td := []byte{
-		0, 0x02,
-		0, 0x05,
-		3, 0x10, 0x12, 0x4, 0x12, // Function hash
+		1, 0x02,
+		1, 0x05,
+		4, 0x10, 0x12, 0x4, 0x12, // Function hash
 	}
 	mc.Data = td
 
@@ -1836,9 +1836,9 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 	mc := NewMockContext(code)
 
 	mc.Data = []byte{
-		1, 0, 5,
-		1, 0, 2,
-		1, 0, 1, // Function hash
+		2, 0, 5,
+		2, 0, 2,
+		2, 0, 1, // Function hash
 	}
 
 	vm.context = mc
@@ -1879,9 +1879,9 @@ func TestVM_Exec_FunctionCall(t *testing.T) {
 	mc := NewMockContext(code)
 
 	mc.Data = []byte{
-		1, 0, 2,
-		1, 0, 5,
-		1, 0, 2, // Function hash
+		2, 0, 2,
+		2, 0, 5,
+		2, 0, 2, // Function hash
 	}
 
 	vm.context = mc
