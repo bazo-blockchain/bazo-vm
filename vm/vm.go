@@ -373,28 +373,20 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			gasCostPerRound := opCode.gasPrice
-			multiplicator := left
-			// Starts at 1 because the first calculation is done immediately
-			// Otherwise 5^2 leads to two iterations and the result would be 125
-			for i := 1; right.CmpAbs(big.NewInt(int64(i))) == 1; i++ {
+			gasCost := opCode.gasPrice * uint64(right.Int64())
 
-				if int64(vm.fee-gasCostPerRound) < 0 {
-					vm.evaluationStack.Push([]byte(opCode.Name + ": Out of gas"))
-					return false
-				}
+			if int64(vm.fee-gasCost) < 0 {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Out of gas"))
+				return false
+			}
 
-				left.Mul(&left, &multiplicator)
+			left.Exp(&left, &right, nil)
 
-				// As multiplication is done within this
-				vm.fee = vm.fee - gasCostPerRound
+			err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
 
-				err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
-
-				if err != nil {
-					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-					return false
-				}
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
 			}
 
 		case Div:
