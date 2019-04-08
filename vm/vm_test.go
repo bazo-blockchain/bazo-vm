@@ -322,6 +322,102 @@ func TestVM_Exec_Multiplication(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_Exponent(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 2,
+		PushInt, 1, 0, 5,
+		Exp,
+		Halt,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+	expected := 25
+	actual := ByteArrayToInt(tos)
+
+	if expected != actual {
+		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
+func TestVM_Exec_Big_Exponent(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 12,
+		PushInt, 1, 0, 5,
+		Exp,
+		Halt,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+	expected := 244140625
+	actual := ByteArrayToInt(tos)
+
+	if expected != actual {
+		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
+func TestVM_Exec_Multiple_Exponent(t *testing.T) {
+	// Calculates 5 ^ 3 ^ 2
+	code := []byte{
+		PushInt, 1, 0, 2,
+		PushInt, 1, 0, 3,
+		Exp,
+		PushInt, 1, 0, 5,
+		Exp,
+		Halt,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+	expected := 1953125
+	actual := ByteArrayToInt(tos)
+
+	if expected != actual {
+		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
+func TestVM_Exec_Negative_Exponent(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 1, 5,
+		PushInt, 1, 0, 2,
+		Exp,
+		Halt,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+
+	expected := "exp: Negative exponents are not allowed."
+	actual := string(tos)
+
+	if expected != actual {
+		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
 func TestVM_Exec_Modulo(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 5,
