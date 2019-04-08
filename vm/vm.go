@@ -795,19 +795,21 @@ func (vm *VM) Exec(trace bool) bool {
 			for i := 0; i < len(td); i++ {
 				length := int(td[i]) // Length of parameters
 
-				if len(td)-i-1 <= length {
+				// Check if Length of TransactionData - the already read data is greater then or equal to the given
+				// length parameter
+				if len(td)-i-1 < length {
 					vm.evaluationStack.Push([]byte(opCode.Name + ": Index out of bounds"))
 					return false
 				}
 
-				err := vm.evaluationStack.Push(td[i+1 : i+length+2])
+				err := vm.evaluationStack.Push(td[i+1 : i+length+1])
 
 				if err != nil {
 					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
 				}
 
-				i += int(td[i]) + 1 // Increase to next parameter length
+				i += int(td[i]) // Increase to next parameter length
 			}
 
 		case NewMap:
