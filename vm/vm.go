@@ -163,15 +163,26 @@ func (vm *VM) Exec(trace bool) bool {
 		switch opCode.code {
 
 		case PushInt:
-			arg, errArg1 := vm.fetch(opCode.Name)
-			byteCount := int(arg) + 1 // Amount of bytes pushed, maximum amount of bytes that can be pushed is 256
-			bytes, errArg2 := vm.fetchMany(opCode.Name, byteCount)
-
-			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
+			totalBytes, errArg1 := vm.fetch(opCode.Name)
+			if !vm.checkErrors(opCode.Name, errArg1) {
 				return false
 			}
 
-			err = vm.evaluationStack.Push(bytes)
+			var err error
+			if totalBytes == 0 {
+				err = vm.evaluationStack.Push([]byte{0})
+			} else {
+				// Amount of bytes pushed (including sign byte)
+				// Maximum amount of bytes that can be pushed is 256
+				byteCount := int(totalBytes) + 1 //
+				bytes, errArg2 := vm.fetchMany(opCode.Name, byteCount)
+
+				if !vm.checkErrors(opCode.Name, errArg2) {
+					return false
+				}
+
+				err = vm.evaluationStack.Push(bytes)
+			}
 
 			if err != nil {
 				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))

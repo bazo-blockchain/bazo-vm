@@ -51,7 +51,7 @@ func TestVM_Exec_GasConsumption(t *testing.T) {
 
 func TestVM_Exec_PushInt(t *testing.T) {
 	code := []byte{
-		PushInt, 0, 0, // 0
+		PushInt, 0, // 0
 		PushInt, 1, 1, 1, // -1
 		PushInt, 1, 0, 255, // 255
 		PushInt, 2, 0, 1, 0, // 256
@@ -69,10 +69,9 @@ func TestVM_Exec_PushInt(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_PushOutOfBounds(t *testing.T) {
+func TestVM_Exec_PushInt_OutOfBounds(t *testing.T) {
 	code := []byte{
-		PushInt, 0, 125,
-		PushInt, 126, 12,
+		PushInt, 1, 125,
 		Halt,
 	}
 
