@@ -681,6 +681,7 @@ func TestVM_Exec_Jmpfalse(t *testing.T) {
 		Push, 1, 3,
 		NoOp,
 		NoOp,
+		// JmpFalse jumps here
 		NoOp,
 		Halt,
 	}
