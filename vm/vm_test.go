@@ -654,7 +654,7 @@ func TestVM_Exec_Jmpif(t *testing.T) {
 		PushInt, 1, 0, 20,
 		Lt,
 		JmpTrue, 0, 21,
-		PushInt, 0, 3,
+		Push, 1, 3,
 		NoOp,
 		NoOp,
 		NoOp,
@@ -673,12 +673,12 @@ func TestVM_Exec_Jmpif(t *testing.T) {
 
 func TestVM_Exec_Jmp(t *testing.T) {
 	code := []byte{
-		PushInt, 0, 3,
+		Push, 1, 3,
 		Jmp, 0, 14,
-		PushInt, 0, 4,
+		Push, 1, 4,
 		Add,
-		PushInt, 0, 15,
-		Add,
+		Push, 1, 15,
+		Add, // Jump here
 		Halt,
 	}
 
@@ -699,8 +699,8 @@ func TestVM_Exec_Jmp(t *testing.T) {
 
 func TestVM_Exec_Call(t *testing.T) {
 	code := []byte{
-		PushInt, 0, 10,
-		PushInt, 0, 8,
+		Push, 1, 10,
+		Push, 1, 8,
 		Call, 0, 13, 2,
 		Halt,
 		NoOp,
@@ -835,8 +835,8 @@ func TestVM_Exec_TosSize(t *testing.T) {
 
 func TestVM_Exec_CallExt(t *testing.T) {
 	code := []byte{
-		PushInt, 0, 10,
-		PushInt, 0, 8,
+		Push, 1, 10,
+		Push, 1, 8,
 		CallExt, 227, 237, 86, 189, 8, 109, 137, 88, 72, 58, 18, 115, 79, 160, 174, 127, 92, 139, 177, 96, 239, 144, 146, 198, 126, 130, 237, 155, 25, 228, 199, 178, 41, 24, 45, 14, 2,
 		Halt,
 	}
@@ -1057,7 +1057,7 @@ func TestVM_Exec_Calldata(t *testing.T) {
 
 func TestVM_Exec_Sha3(t *testing.T) {
 	code := []byte{
-		PushInt, 0, 3,
+		Push, 1, 3,
 		SHA3,
 		Halt,
 	}
@@ -1076,11 +1076,11 @@ func TestVM_Exec_Sha3(t *testing.T) {
 
 func TestVM_Exec_Roll(t *testing.T) {
 	code := []byte{
-		PushInt, 0, 3,
-		PushInt, 0, 4,
-		PushInt, 0, 5,
-		PushInt, 0, 6,
-		PushInt, 0, 7,
+		Push, 1, 3,
+		Push, 1, 4,
+		Push, 1, 5,
+		Push, 1, 6,
+		Push, 1, 7,
 		Roll, 2,
 		Halt,
 	}
@@ -1124,16 +1124,16 @@ func TestVM_Exec_NewMap(t *testing.T) {
 
 func TestVM_Exec_MapHasKey_true(t *testing.T) {
 	code := []byte{
-		PushInt, 0x00, 0x01, //The key for MAPGETVAL
+		Push, 1, 1, //The key for MAPGETVAL
 
-		PushInt, 0x01, 0x48, 0x48,
-		PushInt, 0x00, 0x01,
+		Push, 2, 0x48, 0x48,
+		Push, 1, 0x01,
 
-		PushInt, 0x01, 0x69, 0x69,
-		PushInt, 0x00, 0x02,
+		Push, 2, 0x69, 0x69,
+		Push, 1, 0x02,
 
-		PushInt, 0x01, 0x48, 0x69,
-		PushInt, 0x00, 0x03,
+		Push, 2, 0x48, 0x69,
+		Push, 1, 0x03,
 
 		NewMap,
 
@@ -1170,16 +1170,16 @@ func TestVM_Exec_MapHasKey_true(t *testing.T) {
 
 func TestVM_Exec_MapHasKey_false(t *testing.T) {
 	code := []byte{
-		PushInt, 0x00, 0x06, //The key for MAPGETVAL
+		Push, 1, 0x06, //The key for MAPGETVAL
 
-		PushInt, 0x01, 0x48, 0x48,
-		PushInt, 0x00, 0x01,
+		Push, 2, 0x48, 0x48,
+		Push, 1, 0x01,
 
-		PushInt, 0x01, 0x69, 0x69,
-		PushInt, 0x00, 0x02,
+		Push, 2, 0x69, 0x69,
+		Push, 1, 0x02,
 
-		PushInt, 0x01, 0x48, 0x69,
-		PushInt, 0x00, 0x03,
+		Push, 2, 0x48, 0x69,
+		Push, 1, 0x03,
 
 		NewMap,
 
@@ -1217,7 +1217,7 @@ func TestVM_Exec_MapHasKey_false(t *testing.T) {
 func TestVM_Exec_MapPush(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 72, 105,
-		PushInt, 0, 0x03,
+		Push, 1, 0x03,
 		NewMap,
 		MapPush,
 		Halt,
@@ -1262,16 +1262,16 @@ func TestVM_Exec_MapPush(t *testing.T) {
 
 func TestVM_Exec_MapGetVAL(t *testing.T) {
 	code := []byte{
-		PushInt, 0x00, 0x01, //The key for MAPGETVAL
+		Push, 1, 0x01, //The key for MAPGETVAL
 
-		PushInt, 0x01, 0x48, 0x48,
-		PushInt, 0x00, 0x01,
+		Push, 2, 0x48, 0x48,
+		Push, 1, 0x01,
 
-		PushInt, 0x01, 0x69, 0x69,
-		PushInt, 0x00, 0x02,
+		Push, 2, 0x69, 0x69,
+		Push, 1, 0x02,
 
-		PushInt, 0x01, 0x48, 0x69,
-		PushInt, 0x00, 0x03,
+		Push, 2, 0x48, 0x69,
+		Push, 1, 0x03,
 
 		NewMap,
 
@@ -1308,14 +1308,14 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 
 func TestVM_Exec_MapSetVal(t *testing.T) {
 	code := []byte{
-		PushInt, 0x01, 0x55, 0x55, //Value to be reset by MAPSETVAL
-		PushInt, 0x00, 0x03,
+		Push, 2, 0x55, 0x55, //Value to be reset by MAPSETVAL
+		Push, 1, 0x03,
 
-		PushInt, 0x01, 0x48, 0x69,
-		PushInt, 0x00, 0x03,
+		Push, 2, 0x48, 0x69,
+		Push, 1, 0x03,
 
-		PushInt, 0x01, 0x69, 0x69,
-		PushInt, 0x00, 0x02,
+		Push, 2, 0x69, 0x69,
+		Push, 1, 0x02,
 
 		NewMap,
 
@@ -1362,16 +1362,16 @@ func TestVM_Exec_MapSetVal(t *testing.T) {
 
 func TestVM_Exec_MapRemove(t *testing.T) {
 	code := []byte{
-		PushInt, 0x00, 0x03, // The Key to be removed with MAPREMOVE
+		Push, 1, 0x03, // The Key to be removed with MAPREMOVE
 
-		PushInt, 0x01, 0x48, 0x69,
-		PushInt, 0x00, 0x03,
+		Push, 2, 0x48, 0x69,
+		Push, 1, 0x03,
 
-		PushInt, 0x01, 0x48, 0x48,
-		PushInt, 0x00, 0x01,
+		Push, 2, 0x48, 0x48,
+		Push, 1, 0x01,
 
-		PushInt, 0x01, 0x69, 0x69,
-		PushInt, 0x00, 0x02,
+		Push, 2, 0x69, 0x69,
+		Push, 1, 0x02,
 
 		NewMap,
 
@@ -1446,7 +1446,7 @@ func TestVM_Exec_NewArr(t *testing.T) {
 
 func TestVM_Exec_ArrAppend(t *testing.T) {
 	code := []byte{
-		PushInt, 0x01, 0xFF, 0x00,
+		Push, 2, 0xFF, 0x00,
 		NewArr,
 		ArrAppend,
 		Halt,
@@ -1475,12 +1475,12 @@ func TestVM_Exec_ArrAppend(t *testing.T) {
 
 func TestVM_Exec_ArrInsert(t *testing.T) {
 	code := []byte{
-		PushInt, 0x01, 0x00, 0x00,
-		PushInt, 0x01, 0x00, 0x00,
+		Push, 2, 0x00, 0x00,
+		Push, 2, 0x00, 0x00,
 
-		PushInt, 0x01, 0xFF, 0x00,
+		Push, 2, 0xFF, 0x00,
 
-		PushInt, 0x01, 0xFF, 0x00,
+		Push, 2, 0xFF, 0x00,
 		NewArr,
 		ArrAppend,
 		ArrAppend,
@@ -1516,10 +1516,10 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 
 func TestVM_Exec_ArrRemove(t *testing.T) {
 	code := []byte{
-		PushInt, 0x01, 0x01, 0x00, //Index of element to remove
-		PushInt, 0x01, 0xBB, 0x00,
-		PushInt, 0x01, 0xAA, 0x00,
-		PushInt, 0x01, 0xFF, 0x00,
+		Push, 2, 0x01, 0x00, //Index of element to remove
+		Push, 2, 0xBB, 0x00,
+		Push, 2, 0xAA, 0x00,
+		Push, 2, 0xFF, 0x00,
 
 		NewArr,
 
@@ -1573,10 +1573,10 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 
 func TestVM_Exec_ArrAt(t *testing.T) {
 	code := []byte{
-		PushInt, 0x01, 0x02, 0x00, // index for ARRAT
-		PushInt, 0x01, 0xBB, 0x00,
-		PushInt, 0x01, 0xAA, 0x00,
-		PushInt, 0x01, 0xFF, 0x00,
+		Push, 2, 0x02, 0x00, // index for ARRAT
+		Push, 2, 0xBB, 0x00,
+		Push, 2, 0xAA, 0x00,
+		Push, 2, 0xFF, 0x00,
 
 		NewArr,
 
@@ -1633,7 +1633,8 @@ func TestVM_Exec_NonValidOpCode(t *testing.T) {
 
 func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 	code := []byte{
-		PushInt, 0x00, 0x00, PushInt, 0x0b, 0x01, 0x00, 0x03, 0x12, 0x05,
+		Push, 1, 0x00,
+		Push, 0x0c, 0x01, 0x00, 0x03, 0x12, 0x05,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1643,7 +1644,7 @@ func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "pushint: Instruction set out of bounds"
+	expected := "push: Instruction set out of bounds"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
@@ -1652,7 +1653,7 @@ func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 
 func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 	code := []byte{
-		PushInt, 0x00, 0x01,
+		Push, 1, 0x01,
 		SHA3,
 		Sub, 0x02, 0x03,
 	}
@@ -1674,7 +1675,7 @@ func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 
 func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds(t *testing.T) {
 	code := []byte{
-		PushInt, 0, 20,
+		Push, 1, 20,
 		Roll, 0,
 	}
 
