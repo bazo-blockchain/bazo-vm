@@ -380,7 +380,7 @@ func (vm *VM) Exec(trace bool) bool {
 			for i := 1; right.CmpAbs(big.NewInt(int64(i))) == 1; i++ {
 
 				if int64(vm.fee-gasCostPerRound) < 0 {
-					vm.evaluationStack.Push([]byte(opCode.Name + ": Out of gas" ))
+					vm.evaluationStack.Push([]byte(opCode.Name + ": Out of gas"))
 					return false
 				}
 
