@@ -123,7 +123,6 @@ func (vm *VM) trace() {
 }
 
 func (vm *VM) Exec(trace bool) bool {
-
 	vm.code = vm.context.GetContract()
 	vm.fee = vm.context.GetFee()
 
@@ -163,23 +162,99 @@ func (vm *VM) Exec(trace bool) bool {
 		// Decode
 		switch opCode.code {
 
-		case PUSH:
-			arg, errArg1 := vm.fetch(opCode.Name)
-			byteCount := int(arg) + 1 // Amount of bytes pushed, maximum amount of bytes that can be pushed is 256
-			bytes, errArg2 := vm.fetchMany(opCode.Name, byteCount)
+		case PushInt:
+			totalBytes, errArg1 := vm.fetch(opCode.Name)
+			if !vm.checkErrors(opCode.Name, errArg1) {
+				return false
+			}
+
+			var err error
+			if totalBytes == 0 {
+				err = vm.evaluationStack.Push([]byte{0})
+			} else {
+				// Amount of bytes pushed (including sign byte)
+				// Maximum amount of bytes that can be pushed is 256
+				byteCount := int(totalBytes) + 1 //
+				bytes, errArg2 := vm.fetchMany(opCode.Name, byteCount)
+
+				if !vm.checkErrors(opCode.Name, errArg2) {
+					return false
+				}
+
+				err = vm.evaluationStack.Push(bytes)
+			}
+
+			if err != nil {
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+		case PushBool:
+			boolValue, err := vm.fetch(opCode.Name)
+
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
+
+			if boolValue > 1 {
+				_ = vm.evaluationStack.Push([]byte(
+					fmt.Sprintf("%s: invalid bool value %v", opCode.Name, boolValue)))
+				return false
+			}
+
+			err = vm.evaluationStack.Push([]byte{boolValue})
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
+		case PushChar:
+			charCode, err := vm.fetch(opCode.Name)
+
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
+
+			if charCode > 127 {
+				_ = vm.evaluationStack.Push([]byte(
+					fmt.Sprintf("%s: invalid ASCII code %v", opCode.Name, charCode)))
+				return false
+			}
+
+			err = vm.evaluationStack.Push([]byte{charCode})
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
+		case PushStr:
+			length, errArg1 := vm.fetch(opCode.Name)
+			bytes, errArg2 := vm.fetchMany(opCode.Name, int(length))
+
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
+				return false
+			}
+
+			for _, charCode := range bytes {
+				if charCode > 127 {
+					_ = vm.evaluationStack.Push([]byte(
+						fmt.Sprintf("%s: invalid ASCII code %v", opCode.Name, charCode)))
+					return false
+				}
+			}
+
+			err = vm.evaluationStack.Push(bytes)
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
+		case Push:
+			length, errArg1 := vm.fetch(opCode.Name)
+			bytes, errArg2 := vm.fetchMany(opCode.Name, int(length))
 
 			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
 				return false
 			}
 
 			err = vm.evaluationStack.Push(bytes)
-
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+			if !vm.checkErrors(opCode.Name, err) {
 				return false
 			}
-
-		case DUP:
+		case Dup:
 			tos, err := vm.PopBytes(opCode)
 
 			if !vm.checkErrors(opCode.Name, err) {
@@ -200,7 +275,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case ROLL:
+		case Roll:
 			arg, err := vm.fetch(opCode.Name) // arg shows how many have to be rolled
 			index := vm.evaluationStack.GetLength() - (int(arg) + 2)
 
@@ -228,14 +303,13 @@ func (vm *VM) Exec(trace bool) bool {
 					return false
 				}
 			}
-
-		case POP:
+		case Pop:
 			_, rerr := vm.PopBytes(opCode)
 			if !vm.checkErrors(opCode.Name, rerr) {
 				return false
 			}
 
-		case ADD:
+		case Add:
 			right, rerr := vm.PopSignedBigInt(opCode)
 			left, lerr := vm.PopSignedBigInt(opCode)
 
@@ -251,7 +325,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case SUB:
+		case Sub:
 			right, rerr := vm.PopSignedBigInt(opCode)
 			left, lerr := vm.PopSignedBigInt(opCode)
 
@@ -267,7 +341,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case MULT:
+		case Mul:
 			right, rerr := vm.PopSignedBigInt(opCode)
 			left, lerr := vm.PopSignedBigInt(opCode)
 
@@ -283,7 +357,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case DIV:
+		case Div:
 			right, rerr := vm.PopSignedBigInt(opCode)
 			left, lerr := vm.PopSignedBigInt(opCode)
 
@@ -304,7 +378,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case MOD:
+		case Mod:
 			right, rerr := vm.PopSignedBigInt(opCode)
 			left, lerr := vm.PopSignedBigInt(opCode)
 
@@ -325,7 +399,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case NEG:
+		case Neg:
 			tos, err := vm.PopSignedBigInt(opCode)
 
 			if err != nil {
@@ -337,7 +411,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 			vm.evaluationStack.Push(SignedByteArrayConversion(tos))
 
-		case EQ:
+		case Eq:
 			right, rerr := vm.PopUnsignedBigInt(opCode)
 			left, lerr := vm.PopUnsignedBigInt(opCode)
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
@@ -347,7 +421,7 @@ func (vm *VM) Exec(trace bool) bool {
 			result := left.Cmp(&right) == 0
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
-		case NEQ:
+		case NotEq:
 			right, rerr := vm.PopUnsignedBigInt(opCode)
 			left, lerr := vm.PopUnsignedBigInt(opCode)
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
@@ -357,7 +431,7 @@ func (vm *VM) Exec(trace bool) bool {
 			result := left.Cmp(&right) != 0
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
-		case LT:
+		case Lt:
 			right, rerr := vm.PopSignedBigInt(opCode)
 			left, lerr := vm.PopSignedBigInt(opCode)
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
@@ -367,7 +441,7 @@ func (vm *VM) Exec(trace bool) bool {
 			result := left.Cmp(&right) == -1
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
-		case GT:
+		case Gt:
 			right, rerr := vm.PopSignedBigInt(opCode)
 			left, lerr := vm.PopSignedBigInt(opCode)
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
@@ -377,7 +451,7 @@ func (vm *VM) Exec(trace bool) bool {
 			result := left.Cmp(&right) == 1
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
-		case LTE:
+		case LtEq:
 			right, rerr := vm.PopSignedBigInt(opCode)
 			left, lerr := vm.PopSignedBigInt(opCode)
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
@@ -387,7 +461,7 @@ func (vm *VM) Exec(trace bool) bool {
 			result := left.Cmp(&right) == -1 || left.Cmp(&right) == 0
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
-		case GTE:
+		case GtEq:
 			right, rerr := vm.PopSignedBigInt(opCode)
 			left, lerr := vm.PopSignedBigInt(opCode)
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
@@ -397,7 +471,7 @@ func (vm *VM) Exec(trace bool) bool {
 			result := left.Cmp(&right) == 1 || left.Cmp(&right) == 0
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
-		case SHIFTL:
+		case ShiftL:
 			nrOfShifts, errArg := vm.fetch(opCode.Name)
 			tos, errStack := vm.PopSignedBigInt(opCode)
 
@@ -413,7 +487,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case SHIFTR:
+		case ShiftR:
 			nrOfShifts, errArg := vm.fetch(opCode.Name)
 			tos, errStack := vm.PopSignedBigInt(opCode)
 
@@ -429,7 +503,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case NOP:
+		case NoOp:
 			_, err := vm.fetch(opCode.Name)
 
 			if err != nil {
@@ -437,7 +511,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case JMP:
+		case Jmp:
 			nextInstruction, err := vm.fetchMany(opCode.Name, 2)
 
 			if !vm.checkErrors(opCode.Name, err) {
@@ -449,7 +523,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 			vm.pc = int(jumpTo.Int64())
 
-		case JMPIF:
+		case JmpTrue:
 			nextInstruction, errArg := vm.fetchMany(opCode.Name, 2)
 			right, errStack := vm.PopBytes(opCode)
 			if !vm.checkErrors(opCode.Name, errArg, errStack) {
@@ -460,7 +534,7 @@ func (vm *VM) Exec(trace bool) bool {
 				vm.pc = ByteArrayToInt(nextInstruction)
 			}
 
-		case CALL:
+		case Call:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
 			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
 
@@ -489,7 +563,7 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.callStack.Push(frame)
 			vm.pc = int(returnAddress.Int64())
 
-		case CALLIF:
+		case CallTrue:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
 			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
 			right, errStack := vm.PopBytes(opCode)
@@ -520,7 +594,7 @@ func (vm *VM) Exec(trace bool) bool {
 				vm.pc = int(returnAddress.Int64())
 			}
 
-		case CALLEXT:
+		case CallExt:
 			transactionAddress, errArg1 := vm.fetchMany(opCode.Name, 32) // Addresses are 32 bytes (var name: transactionAddress)
 			functionHash, errArg2 := vm.fetchMany(opCode.Name, 4)        // Function hash identifies function in external smart contract, first 4 byte of SHA3 hash (var name: functionHash)
 			argsToLoad, errArg3 := vm.fetch(opCode.Name)                 // Shows how many arguments to pop from stack and pass to external function (var name: argsToLoad)
@@ -532,7 +606,7 @@ func (vm *VM) Exec(trace bool) bool {
 			fmt.Sprint("CALLEXT", transactionAddress, functionHash, argsToLoad)
 			//TODO: Invoke new transaction with function hash and arguments, waiting for integration in bazo blockchain to finish
 
-		case RET:
+		case Ret:
 			callstackTos, err := vm.callStack.Peek()
 
 			if !vm.checkErrors(opCode.Name, err) {
@@ -542,7 +616,7 @@ func (vm *VM) Exec(trace bool) bool {
 			vm.callStack.Pop()
 			vm.pc = callstackTos.returnAddress
 
-		case SIZE:
+		case Size:
 			element, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -557,7 +631,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case SSTORE:
+		case StoreSt:
 			index, errArgs := vm.fetch(opCode.Name)
 			value, errStack := vm.PopBytes(opCode)
 			if !vm.checkErrors(opCode.Name, errArgs, errStack) {
@@ -570,7 +644,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case STORE:
+		case StoreLoc:
 			address, errArgs := vm.fetch(opCode.Name)
 			right, errStack := vm.PopSignedBigInt(opCode)
 
@@ -587,7 +661,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 			callstackTos.variables[int(address)] = right
 
-		case SLOAD:
+		case LoadSt:
 			index, err := vm.fetch(opCode.Name)
 			if !vm.checkErrors(opCode.Name, err) {
 				return false
@@ -605,7 +679,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case LOAD:
+		case LoadLoc:
 			address, errArg := vm.fetch(opCode.Name)
 			callstackTos, errCallStack := vm.callStack.Peek()
 
@@ -622,7 +696,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case ADDRESS:
+		case Address:
 			address := vm.context.GetAddress()
 			err := vm.evaluationStack.Push(address[:])
 
@@ -631,7 +705,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case ISSUER:
+		case Issuer:
 			issuer := vm.context.GetIssuer()
 			err := vm.evaluationStack.Push(issuer[:])
 
@@ -640,7 +714,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case BALANCE:
+		case Balance:
 			balance := make([]byte, 8)
 			binary.LittleEndian.PutUint64(balance, vm.context.GetBalance())
 
@@ -651,7 +725,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case CALLER:
+		case Caller:
 			caller := vm.context.GetSender()
 			err := vm.evaluationStack.Push(caller[:])
 
@@ -660,7 +734,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case CALLVAL:
+		case CallVal:
 			value := make([]byte, 8)
 			binary.LittleEndian.PutUint64(value, vm.context.GetAmount())
 
@@ -671,7 +745,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case CALLDATA:
+		case CallData:
 			td := vm.context.GetTransactionData()
 			for i := 0; i < len(td); i++ {
 				length := int(td[i]) // Length of parameters
@@ -691,8 +765,8 @@ func (vm *VM) Exec(trace bool) bool {
 				i += int(td[i]) + 1 // Increase to next parameter length
 			}
 
-		case NEWMAP:
-			m := NewMap()
+		case NewMap:
+			m := CreateMap()
 
 			err = vm.evaluationStack.Push(m)
 			if err != nil {
@@ -700,7 +774,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case MAPHASKEY:
+		case MapHasKey:
 			mba, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -727,7 +801,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
-		case MAPPUSH:
+		case MapPush:
 			mba, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -764,7 +838,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case MAPGETVAL:
+		case MapGetVal:
 			mapAsByteArray, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -795,7 +869,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case MAPSETVAL:
+		case MapSetVal:
 			mapAsByteArray, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -832,7 +906,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case MAPREMOVE:
+		case MapRemove:
 			mapAsByteArray, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -863,11 +937,11 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case NEWARR:
+		case NewArr:
 			a := NewArray()
 			vm.evaluationStack.Push(a)
 
-		case ARRAPPEND:
+		case ArrAppend:
 			a, aerr := vm.PopBytes(opCode)
 			v, verr := vm.PopBytes(opCode)
 			if !vm.checkErrors(opCode.Name, verr, aerr) {
@@ -892,7 +966,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case ARRINSERT:
+		case ArrInsert:
 			a, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -951,7 +1025,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case ARRREMOVE:
+		case ArrRemove:
 			a, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -993,7 +1067,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case ARRAT:
+		case ArrAt:
 			a, err := vm.PopBytes(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -1047,7 +1121,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case CHECKSIG:
+		case CheckSig:
 			publicKeySig, errArg1 := vm.PopBytes(opCode)
 			hash, errArg2 := vm.PopBytes(opCode)
 
@@ -1080,10 +1154,10 @@ func (vm *VM) Exec(trace bool) bool {
 			result := ecdsa.Verify(&pubKey, hash, r, s)
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
-		case ERRHALT:
+		case ErrHalt:
 			return false
 
-		case HALT:
+		case Halt:
 			return true
 		}
 	}

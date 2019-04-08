@@ -6,7 +6,7 @@ import (
 )
 
 func Test_NewMap(t *testing.T) {
-	m := NewMap()
+	m := CreateMap()
 
 	if len(m) != 3 {
 		t.Errorf("Expected a Byte Array with size 3 but got %v", len(m))
@@ -14,7 +14,7 @@ func Test_NewMap(t *testing.T) {
 }
 
 func TestMap_IncerementSize(t *testing.T) {
-	m := NewMap()
+	m := CreateMap()
 
 	s, err := ByteArrayToUI16(m[1:3])
 	if s != 0 || err != nil {
@@ -44,7 +44,7 @@ func TestMap_DecrementSize(t *testing.T) {
 }
 
 func TestMap_Append(t *testing.T) {
-	m := NewMap()
+	m := CreateMap()
 	k := []byte{0x01}
 	v := []byte{0x64, 0x00}
 	err := m.Append(k, v)
@@ -68,7 +68,7 @@ func TestMap_Append(t *testing.T) {
 }
 
 func TestMap_ContainsKey_EmptyMap(t *testing.T) {
-	m := NewMap()
+	m := CreateMap()
 	actual, _ := m.MapContainsKey([]byte{0x00})
 	if actual {
 		t.Errorf("Didn't expect map to contain key")
@@ -76,7 +76,7 @@ func TestMap_ContainsKey_EmptyMap(t *testing.T) {
 }
 
 func TestMap_ContainsKey_false(t *testing.T) {
-	m := NewMap()
+	m := CreateMap()
 	m.Append([]byte{0x02}, []byte{0x01, 0x02})
 	m.Append([]byte{0x05}, []byte{0x01, 0x02})
 	m.Append([]byte{0x03}, []byte{0x01, 0x02})
@@ -88,7 +88,7 @@ func TestMap_ContainsKey_false(t *testing.T) {
 }
 
 func TestMap_ContainsKey_true(t *testing.T) {
-	m := NewMap()
+	m := CreateMap()
 	m.Append([]byte{0x02}, []byte{0x01, 0x02})
 	m.Append([]byte{0x05}, []byte{0x01, 0x02})
 	m.Append([]byte{0x00}, []byte{0x01, 0x02})
@@ -100,7 +100,7 @@ func TestMap_ContainsKey_true(t *testing.T) {
 }
 
 func TestMap_GetVal(t *testing.T) {
-	m := NewMap()
+	m := CreateMap()
 	m.Append([]byte{0x00}, []byte{0x00})
 	m.Append([]byte{0x01}, []byte{0x01, 0x01})
 	m.Append([]byte{0x02, 0x00}, []byte{0x02, 0x02, 0x02})
@@ -126,7 +126,7 @@ func TestMap_GetVal(t *testing.T) {
 }
 
 func TestMap_SetVal(t *testing.T) {
-	actual := NewMap()
+	actual := CreateMap()
 	actual.Append([]byte{0x00}, []byte{0x00})
 	actual.Append([]byte{0x02, 0x00}, []byte{0x02, 0x02, 0x02})
 
@@ -135,7 +135,7 @@ func TestMap_SetVal(t *testing.T) {
 		t.Errorf("Expected map size to be '4' but was '%v'", size)
 	}
 
-	expected := NewMap()
+	expected := CreateMap()
 	expected.Append([]byte{0x00}, []byte{0x00})
 	expected.Append([]byte{0x02, 0x00}, []byte{0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04})
 
@@ -157,7 +157,7 @@ func TestMap_SetVal(t *testing.T) {
 }
 
 func TestMap_Remove(t *testing.T) {
-	actual := NewMap()
+	actual := CreateMap()
 	actual.Append([]byte{0x00}, []byte{0x00})
 	actual.Append([]byte{0x01}, []byte{0x01, 0x01})
 	actual.Append([]byte{0x02, 0x00}, []byte{0x02, 0x02, 0x02})
@@ -168,7 +168,7 @@ func TestMap_Remove(t *testing.T) {
 		t.Errorf("Expected map size to be '4' but was '%v'", size)
 	}
 
-	expected := NewMap()
+	expected := CreateMap()
 	expected.Append([]byte{0x00}, []byte{0x00})
 	expected.Append([]byte{0x01}, []byte{0x01, 0x01})
 	expected.Append([]byte{0x03, 0x00, 0x00}, []byte{0x03, 0x03, 0x03, 0x03, 0x03})

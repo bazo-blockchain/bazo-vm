@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"gotest.tools/assert"
 )
 
 func TestVM_NewTestVM(t *testing.T) {
@@ -25,10 +26,10 @@ func TestVM_NewTestVM(t *testing.T) {
 
 func TestVM_Exec_GasConsumption(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 8,
-		PUSH, 1, 0, 8,
-		ADD,
-		HALT,
+		PushInt, 1, 0, 8,
+		PushInt, 1, 0, 8,
+		Add,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -36,7 +37,8 @@ func TestVM_Exec_GasConsumption(t *testing.T) {
 	mc.Fee = 30
 	vm.context = mc
 
-	vm.Exec(false)
+	success := vm.Exec(false)
+	assert.Assert(t, success)
 
 	ba, _ := vm.evaluationStack.Pop()
 	expected := 16
@@ -47,11 +49,30 @@ func TestVM_Exec_GasConsumption(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_PushOutOfBounds(t *testing.T) {
+func TestVM_Exec_PushInt(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 125,
-		PUSH, 126, 12,
-		HALT,
+		PushInt, 0, // 0
+		PushInt, 1, 1, 1, // -1
+		PushInt, 1, 0, 255, // 255
+		PushInt, 2, 0, 1, 0, // 256
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	expected := []int64{256, 255, -1, 0}
+
+	for _, i := range expected {
+		bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+		assert.Equal(t, bint.Cmp(big.NewInt(i)), 0)
+	}
+}
+
+func TestVM_Exec_PushInt_OutOfBounds(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 125,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -65,19 +86,152 @@ func TestVM_Exec_PushOutOfBounds(t *testing.T) {
 	}
 
 	actual := string(tos)
-	expected := "push: Instruction set out of bounds"
+	expected := "pushint: Instruction set out of bounds"
 
 	if actual != expected {
 		t.Errorf("Expected '%v' to be returned but got '%v'", expected, actual)
 	}
 }
 
+func TestVM_Exec_PushBool(t *testing.T) {
+	code := []byte{
+		PushBool, 0,
+		PushBool, 1,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
+	tos, _ = vm.evaluationStack.Pop()
+	assertBytes(t, tos, 0)
+}
+
+func TestVM_Exec_PushBool_Invalid(t *testing.T) {
+	code := []byte{
+		PushBool, 5,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "pushbool: invalid bool value 5")
+}
+
+func TestVM_Exec_PushChar(t *testing.T) {
+	code := []byte{
+		PushChar, 104, // 'h'
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 104)
+}
+
+func TestVM_Exec_PushChar_Invalid(t *testing.T) {
+	code := []byte{
+		PushChar, 128,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "pushchar: invalid ASCII code 128")
+}
+
+func TestVM_Exec_PushStr_Empty(t *testing.T) {
+	code := []byte{
+		PushStr, 0, // ""
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos)
+}
+
+func TestVM_Exec_PushStr(t *testing.T) {
+	code := []byte{
+		PushStr, 5, 104, 101, 108, 108, 111, // "hello"
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "hello")
+}
+
+func TestVM_Exec_PushStr_Invalid(t *testing.T) {
+	code := []byte{
+		PushStr, 5, 104, 101, 200, 108, 111, // "hello"
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "pushstr: invalid ASCII code 200")
+}
+
+func TestVM_Exec_Push_Empty(t *testing.T) {
+	code := []byte{
+		Push, 0, // []
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos)
+}
+
+func TestVM_Exec_Push(t *testing.T) {
+	code := []byte{
+		Push, 2, 128, 255, // [128, 255]
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 128, 255)
+}
+
+func TestVM_Exec_Push_InvalidLength(t *testing.T) {
+	code := []byte{
+		Push, 2, 128, // [128]
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "push: Instruction set out of bounds")
+}
+
 func TestVM_Exec_Addition(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 125,
-		PUSH, 2, 0, 168, 22,
-		ADD,
-		HALT,
+		PushInt, 1, 0, 125,
+		PushInt, 2, 0, 168, 22,
+		Add,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -97,10 +251,10 @@ func TestVM_Exec_Addition(t *testing.T) {
 
 func TestVM_Exec_Subtraction(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 6,
-		PUSH, 1, 0, 3,
-		SUB,
-		HALT,
+		PushInt, 1, 0, 6,
+		PushInt, 1, 0, 3,
+		Sub,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -120,10 +274,10 @@ func TestVM_Exec_Subtraction(t *testing.T) {
 
 func TestVM_Exec_SubtractionWithNegativeResults(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 3,
-		PUSH, 1, 0, 6,
-		SUB,
-		HALT,
+		PushInt, 1, 0, 3,
+		PushInt, 1, 0, 6,
+		Sub,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -147,10 +301,10 @@ func TestVM_Exec_SubtractionWithNegativeResults(t *testing.T) {
 
 func TestVM_Exec_Multiplication(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 5,
-		PUSH, 1, 0, 2,
-		MULT,
-		HALT,
+		PushInt, 1, 0, 5,
+		PushInt, 1, 0, 2,
+		Mul,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -170,10 +324,10 @@ func TestVM_Exec_Multiplication(t *testing.T) {
 
 func TestVM_Exec_Modulo(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 5,
-		PUSH, 1, 0, 2,
-		MOD,
-		HALT,
+		PushInt, 1, 0, 5,
+		PushInt, 1, 0, 2,
+		Mod,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -193,9 +347,9 @@ func TestVM_Exec_Modulo(t *testing.T) {
 
 func TestVM_Exec_Negate(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 5,
-		NEG,
-		HALT,
+		PushInt, 1, 0, 5,
+		Neg,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -215,10 +369,10 @@ func TestVM_Exec_Negate(t *testing.T) {
 
 func TestVM_Exec_Division(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 6,
-		PUSH, 1, 0, 2,
-		DIV,
-		HALT,
+		PushInt, 1, 0, 6,
+		PushInt, 1, 0, 2,
+		Div,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -238,10 +392,10 @@ func TestVM_Exec_Division(t *testing.T) {
 
 func TestVM_Exec_DivisionByZero(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 6,
-		PUSH, 1, 0, 0,
-		DIV,
-		HALT,
+		PushInt, 1, 0, 6,
+		PushInt, 1, 0, 0,
+		Div,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -263,10 +417,10 @@ func TestVM_Exec_DivisionByZero(t *testing.T) {
 
 func TestVM_Exec_Eq(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 6,
-		PUSH, 1, 0, 6,
-		EQ,
-		HALT,
+		PushInt, 1, 0, 6,
+		PushInt, 1, 0, 6,
+		Eq,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -286,10 +440,10 @@ func TestVM_Exec_Eq(t *testing.T) {
 
 func TestVM_Exec_Neq(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 6,
-		PUSH, 1, 0, 5,
-		NEQ,
-		HALT,
+		PushInt, 1, 0, 6,
+		PushInt, 1, 0, 5,
+		NotEq,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -309,10 +463,10 @@ func TestVM_Exec_Neq(t *testing.T) {
 
 func TestVM_Exec_Lt(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 4,
-		PUSH, 1, 0, 6,
-		LT,
-		HALT,
+		PushInt, 1, 0, 4,
+		PushInt, 1, 0, 6,
+		Lt,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -333,10 +487,10 @@ func TestVM_Exec_Lt(t *testing.T) {
 
 func TestVM_Exec_Gt(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 6,
-		PUSH, 1, 0, 4,
-		GT,
-		HALT,
+		PushInt, 1, 0, 6,
+		PushInt, 1, 0, 4,
+		Gt,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -356,10 +510,10 @@ func TestVM_Exec_Gt(t *testing.T) {
 
 func TestVM_Exec_Lte_islower(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 4,
-		PUSH, 1, 0, 6,
-		LTE,
-		HALT,
+		PushInt, 1, 0, 4,
+		PushInt, 1, 0, 6,
+		LtEq,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -380,10 +534,10 @@ func TestVM_Exec_Lte_islower(t *testing.T) {
 
 func TestVM_Exec_Lte_isequals(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 6,
-		PUSH, 1, 0, 6,
-		LTE,
-		HALT,
+		PushInt, 1, 0, 6,
+		PushInt, 1, 0, 6,
+		LtEq,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -403,10 +557,10 @@ func TestVM_Exec_Lte_isequals(t *testing.T) {
 
 func TestVM_Exec_Gte_isGreater(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 6,
-		PUSH, 1, 0, 4,
-		GTE,
-		HALT,
+		PushInt, 1, 0, 6,
+		PushInt, 1, 0, 4,
+		GtEq,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -426,10 +580,10 @@ func TestVM_Exec_Gte_isGreater(t *testing.T) {
 
 func TestVM_Exec_Gte_isEqual(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 6,
-		PUSH, 1, 0, 6,
-		GTE,
-		HALT,
+		PushInt, 1, 0, 6,
+		PushInt, 1, 0, 6,
+		GtEq,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -449,9 +603,9 @@ func TestVM_Exec_Gte_isEqual(t *testing.T) {
 
 func TestVM_Exec_Shiftl(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 1,
-		SHIFTL, 3,
-		HALT,
+		PushInt, 1, 0, 1,
+		ShiftL, 3,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -471,9 +625,9 @@ func TestVM_Exec_Shiftl(t *testing.T) {
 
 func TestVM_Exec_Shiftr(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 8,
-		SHIFTR, 3,
-		HALT,
+		PushInt, 1, 0, 8,
+		ShiftR, 3,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -493,17 +647,17 @@ func TestVM_Exec_Shiftr(t *testing.T) {
 
 func TestVM_Exec_Jmpif(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 3,
-		PUSH, 1, 0, 4,
-		ADD,
-		PUSH, 1, 0, 20,
-		LT,
-		JMPIF, 0, 21,
-		PUSH, 0, 3,
-		NOP,
-		NOP,
-		NOP,
-		HALT,
+		PushInt, 1, 0, 3,
+		PushInt, 1, 0, 4,
+		Add,
+		PushInt, 1, 0, 20,
+		Lt,
+		JmpTrue, 0, 21,
+		Push, 1, 3,
+		NoOp,
+		NoOp,
+		NoOp,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -518,13 +672,13 @@ func TestVM_Exec_Jmpif(t *testing.T) {
 
 func TestVM_Exec_Jmp(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 3,
-		JMP, 0, 14,
-		PUSH, 0, 4,
-		ADD,
-		PUSH, 0, 15,
-		ADD,
-		HALT,
+		Push, 1, 3,
+		Jmp, 0, 14,
+		Push, 1, 4,
+		Add,
+		Push, 1, 15,
+		Add, // Jump here
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -544,16 +698,16 @@ func TestVM_Exec_Jmp(t *testing.T) {
 
 func TestVM_Exec_Call(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 10,
-		PUSH, 0, 8,
-		CALL, 0, 13, 2,
-		HALT,
-		NOP,
-		NOP,
-		LOAD, 0, // Begin of called function at address 14
-		LOAD, 1,
-		SUB,
-		RET,
+		Push, 1, 10,
+		Push, 1, 8,
+		Call, 0, 13, 2,
+		Halt,
+		NoOp,
+		NoOp,
+		LoadLoc, 0, // Begin of called function at address 14
+		LoadLoc, 1,
+		Sub,
+		Ret,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -579,19 +733,19 @@ func TestVM_Exec_Call(t *testing.T) {
 
 func TestVM_Exec_Callif_true(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 10,
-		PUSH, 1, 0, 8,
-		PUSH, 1, 0, 10,
-		PUSH, 1, 0, 10,
-		EQ,
-		CALLIF, 0, 24, 2,
-		HALT,
-		NOP,
-		NOP,
-		LOAD, 0, // Begin of called function at address 20
-		LOAD, 1,
-		SUB,
-		RET,
+		PushInt, 1, 0, 10,
+		PushInt, 1, 0, 8,
+		PushInt, 1, 0, 10,
+		PushInt, 1, 0, 10,
+		Eq,
+		CallTrue, 0, 24, 2,
+		Halt,
+		NoOp,
+		NoOp,
+		LoadLoc, 0, // Begin of called function at address 20
+		LoadLoc, 1,
+		Sub,
+		Ret,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -617,19 +771,19 @@ func TestVM_Exec_Callif_true(t *testing.T) {
 
 func TestVM_Exec_Callif_false(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 10,
-		PUSH, 1, 0, 8,
-		PUSH, 1, 0, 10,
-		PUSH, 1, 0, 2,
-		EQ,
-		CALLIF, 0, 25, 2,
-		HALT,
-		NOP,
-		NOP,
-		LOAD, 0, // Begin of called function at address 21
-		LOAD, 1,
-		SUB,
-		RET,
+		PushInt, 1, 0, 10,
+		PushInt, 1, 0, 8,
+		PushInt, 1, 0, 10,
+		PushInt, 1, 0, 2,
+		Eq,
+		CallTrue, 0, 25, 2,
+		Halt,
+		NoOp,
+		NoOp,
+		LoadLoc, 0, // Begin of called function at address 21
+		LoadLoc, 1,
+		Sub,
+		Ret,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -655,9 +809,9 @@ func TestVM_Exec_Callif_false(t *testing.T) {
 
 func TestVM_Exec_TosSize(t *testing.T) {
 	code := []byte{
-		PUSH, 2, 10, 4, 5,
-		SIZE,
-		HALT,
+		PushInt, 2, 10, 4, 5,
+		Size,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -680,10 +834,10 @@ func TestVM_Exec_TosSize(t *testing.T) {
 
 func TestVM_Exec_CallExt(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 10,
-		PUSH, 0, 8,
-		CALLEXT, 227, 237, 86, 189, 8, 109, 137, 88, 72, 58, 18, 115, 79, 160, 174, 127, 92, 139, 177, 96, 239, 144, 146, 198, 126, 130, 237, 155, 25, 228, 199, 178, 41, 24, 45, 14, 2,
-		HALT,
+		Push, 1, 10,
+		Push, 1, 8,
+		CallExt, 227, 237, 86, 189, 8, 109, 137, 88, 72, 58, 18, 115, 79, 160, 174, 127, 92, 139, 177, 96, 239, 144, 146, 198, 126, 130, 237, 155, 25, 228, 199, 178, 41, 24, 45, 14, 2,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -694,10 +848,10 @@ func TestVM_Exec_CallExt(t *testing.T) {
 
 func TestVM_Exec_Sload(t *testing.T) {
 	code := []byte{
-		SLOAD, 1,
-		SLOAD, 0,
-		SLOAD, 2,
-		HALT,
+		LoadSt, 1,
+		LoadSt, 0,
+		LoadSt, 2,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -735,9 +889,9 @@ func TestVM_Exec_Sload(t *testing.T) {
 
 func TestVM_Exec_Sstore(t *testing.T) {
 	code := []byte{
-		PUSH, 9, 72, 105, 32, 84, 104, 101, 114, 101, 33, 33,
-		SSTORE, 0,
-		HALT,
+		PushInt, 9, 72, 105, 32, 84, 104, 101, 114, 101, 33, 33,
+		StoreSt, 0,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -757,8 +911,8 @@ func TestVM_Exec_Sstore(t *testing.T) {
 
 func TestVM_Exec_Address(t *testing.T) {
 	code := []byte{
-		ADDRESS,
-		HALT,
+		Address,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -785,8 +939,8 @@ func TestVM_Exec_Address(t *testing.T) {
 
 func TestVM_Exec_Balance(t *testing.T) {
 	code := []byte{
-		BALANCE,
-		HALT,
+		Balance,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -811,8 +965,8 @@ func TestVM_Exec_Balance(t *testing.T) {
 
 func TestVM_Exec_Caller(t *testing.T) {
 	code := []byte{
-		CALLER,
-		HALT,
+		Caller,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -840,8 +994,8 @@ func TestVM_Exec_Caller(t *testing.T) {
 
 func TestVM_Exec_Callval(t *testing.T) {
 	code := []byte{
-		CALLVAL,
-		HALT,
+		CallVal,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -865,8 +1019,8 @@ func TestVM_Exec_Callval(t *testing.T) {
 
 func TestVM_Exec_Calldata(t *testing.T) {
 	code := []byte{
-		CALLDATA,
-		HALT,
+		CallData,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -902,9 +1056,9 @@ func TestVM_Exec_Calldata(t *testing.T) {
 
 func TestVM_Exec_Sha3(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 3,
+		Push, 1, 3,
 		SHA3,
-		HALT,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -921,13 +1075,13 @@ func TestVM_Exec_Sha3(t *testing.T) {
 
 func TestVM_Exec_Roll(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 3,
-		PUSH, 0, 4,
-		PUSH, 0, 5,
-		PUSH, 0, 6,
-		PUSH, 0, 7,
-		ROLL, 2,
-		HALT,
+		Push, 1, 3,
+		Push, 1, 4,
+		Push, 1, 5,
+		Push, 1, 6,
+		Push, 1, 7,
+		Roll, 2,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -946,8 +1100,8 @@ func TestVM_Exec_Roll(t *testing.T) {
 
 func TestVM_Exec_NewMap(t *testing.T) {
 	code := []byte{
-		NEWMAP,
-		HALT,
+		NewMap,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -969,26 +1123,26 @@ func TestVM_Exec_NewMap(t *testing.T) {
 
 func TestVM_Exec_MapHasKey_true(t *testing.T) {
 	code := []byte{
-		PUSH, 0x00, 0x01, //The key for MAPGETVAL
+		Push, 1, 1, //The key for MAPGETVAL
 
-		PUSH, 0x01, 0x48, 0x48,
-		PUSH, 0x00, 0x01,
+		Push, 2, 0x48, 0x48,
+		Push, 1, 0x01,
 
-		PUSH, 0x01, 0x69, 0x69,
-		PUSH, 0x00, 0x02,
+		Push, 2, 0x69, 0x69,
+		Push, 1, 0x02,
 
-		PUSH, 0x01, 0x48, 0x69,
-		PUSH, 0x00, 0x03,
+		Push, 2, 0x48, 0x69,
+		Push, 1, 0x03,
 
-		NEWMAP,
+		NewMap,
 
-		MAPPUSH,
-		MAPPUSH,
-		MAPPUSH,
+		MapPush,
+		MapPush,
+		MapPush,
 
-		MAPHASKEY,
+		MapHasKey,
 
-		HALT,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1015,26 +1169,26 @@ func TestVM_Exec_MapHasKey_true(t *testing.T) {
 
 func TestVM_Exec_MapHasKey_false(t *testing.T) {
 	code := []byte{
-		PUSH, 0x00, 0x06, //The key for MAPGETVAL
+		Push, 1, 0x06, //The key for MAPGETVAL
 
-		PUSH, 0x01, 0x48, 0x48,
-		PUSH, 0x00, 0x01,
+		Push, 2, 0x48, 0x48,
+		Push, 1, 0x01,
 
-		PUSH, 0x01, 0x69, 0x69,
-		PUSH, 0x00, 0x02,
+		Push, 2, 0x69, 0x69,
+		Push, 1, 0x02,
 
-		PUSH, 0x01, 0x48, 0x69,
-		PUSH, 0x00, 0x03,
+		Push, 2, 0x48, 0x69,
+		Push, 1, 0x03,
 
-		NEWMAP,
+		NewMap,
 
-		MAPPUSH,
-		MAPPUSH,
-		MAPPUSH,
+		MapPush,
+		MapPush,
+		MapPush,
 
-		MAPHASKEY,
+		MapHasKey,
 
-		HALT,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1061,11 +1215,11 @@ func TestVM_Exec_MapHasKey_false(t *testing.T) {
 
 func TestVM_Exec_MapPush(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 72, 105,
-		PUSH, 0, 0x03,
-		NEWMAP,
-		MAPPUSH,
-		HALT,
+		PushInt, 1, 72, 105,
+		Push, 1, 0x03,
+		NewMap,
+		MapPush,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1107,26 +1261,26 @@ func TestVM_Exec_MapPush(t *testing.T) {
 
 func TestVM_Exec_MapGetVAL(t *testing.T) {
 	code := []byte{
-		PUSH, 0x00, 0x01, //The key for MAPGETVAL
+		Push, 1, 0x01, //The key for MAPGETVAL
 
-		PUSH, 0x01, 0x48, 0x48,
-		PUSH, 0x00, 0x01,
+		Push, 2, 0x48, 0x48,
+		Push, 1, 0x01,
 
-		PUSH, 0x01, 0x69, 0x69,
-		PUSH, 0x00, 0x02,
+		Push, 2, 0x69, 0x69,
+		Push, 1, 0x02,
 
-		PUSH, 0x01, 0x48, 0x69,
-		PUSH, 0x00, 0x03,
+		Push, 2, 0x48, 0x69,
+		Push, 1, 0x03,
 
-		NEWMAP,
+		NewMap,
 
-		MAPPUSH,
-		MAPPUSH,
-		MAPPUSH,
+		MapPush,
+		MapPush,
+		MapPush,
 
-		MAPGETVAL,
+		MapGetVal,
 
-		HALT,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1153,23 +1307,23 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 
 func TestVM_Exec_MapSetVal(t *testing.T) {
 	code := []byte{
-		PUSH, 0x01, 0x55, 0x55, //Value to be reset by MAPSETVAL
-		PUSH, 0x00, 0x03,
+		Push, 2, 0x55, 0x55, //Value to be reset by MAPSETVAL
+		Push, 1, 0x03,
 
-		PUSH, 0x01, 0x48, 0x69,
-		PUSH, 0x00, 0x03,
+		Push, 2, 0x48, 0x69,
+		Push, 1, 0x03,
 
-		PUSH, 0x01, 0x69, 0x69,
-		PUSH, 0x00, 0x02,
+		Push, 2, 0x69, 0x69,
+		Push, 1, 0x02,
 
-		NEWMAP,
+		NewMap,
 
-		MAPPUSH,
-		MAPPUSH,
+		MapPush,
+		MapPush,
 
-		MAPSETVAL,
+		MapSetVal,
 
-		HALT,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1207,25 +1361,25 @@ func TestVM_Exec_MapSetVal(t *testing.T) {
 
 func TestVM_Exec_MapRemove(t *testing.T) {
 	code := []byte{
-		PUSH, 0x00, 0x03, // The Key to be removed with MAPREMOVE
+		Push, 1, 0x03, // The Key to be removed with MAPREMOVE
 
-		PUSH, 0x01, 0x48, 0x69,
-		PUSH, 0x00, 0x03,
+		Push, 2, 0x48, 0x69,
+		Push, 1, 0x03,
 
-		PUSH, 0x01, 0x48, 0x48,
-		PUSH, 0x00, 0x01,
+		Push, 2, 0x48, 0x48,
+		Push, 1, 0x01,
 
-		PUSH, 0x01, 0x69, 0x69,
-		PUSH, 0x00, 0x02,
+		Push, 2, 0x69, 0x69,
+		Push, 1, 0x02,
 
-		NEWMAP,
+		NewMap,
 
-		MAPPUSH,
-		MAPPUSH,
-		MAPPUSH,
+		MapPush,
+		MapPush,
+		MapPush,
 
-		MAPREMOVE,
-		HALT,
+		MapRemove,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1264,8 +1418,8 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 
 func TestVM_Exec_NewArr(t *testing.T) {
 	code := []byte{
-		NEWARR,
-		HALT,
+		NewArr,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1291,10 +1445,10 @@ func TestVM_Exec_NewArr(t *testing.T) {
 
 func TestVM_Exec_ArrAppend(t *testing.T) {
 	code := []byte{
-		PUSH, 0x01, 0xFF, 0x00,
-		NEWARR,
-		ARRAPPEND,
-		HALT,
+		Push, 2, 0xFF, 0x00,
+		NewArr,
+		ArrAppend,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1320,17 +1474,17 @@ func TestVM_Exec_ArrAppend(t *testing.T) {
 
 func TestVM_Exec_ArrInsert(t *testing.T) {
 	code := []byte{
-		PUSH, 0x01, 0x00, 0x00,
-		PUSH, 0x01, 0x00, 0x00,
+		Push, 2, 0x00, 0x00,
+		Push, 2, 0x00, 0x00,
 
-		PUSH, 0x01, 0xFF, 0x00,
+		Push, 2, 0xFF, 0x00,
 
-		PUSH, 0x01, 0xFF, 0x00,
-		NEWARR,
-		ARRAPPEND,
-		ARRAPPEND,
-		ARRINSERT,
-		HALT,
+		Push, 2, 0xFF, 0x00,
+		NewArr,
+		ArrAppend,
+		ArrAppend,
+		ArrInsert,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1361,18 +1515,18 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 
 func TestVM_Exec_ArrRemove(t *testing.T) {
 	code := []byte{
-		PUSH, 0x01, 0x01, 0x00, //Index of element to remove
-		PUSH, 0x01, 0xBB, 0x00,
-		PUSH, 0x01, 0xAA, 0x00,
-		PUSH, 0x01, 0xFF, 0x00,
+		Push, 2, 0x01, 0x00, //Index of element to remove
+		Push, 2, 0xBB, 0x00,
+		Push, 2, 0xAA, 0x00,
+		Push, 2, 0xFF, 0x00,
 
-		NEWARR,
+		NewArr,
 
-		ARRAPPEND,
-		ARRAPPEND,
-		ARRAPPEND,
-		ARRREMOVE,
-		HALT,
+		ArrAppend,
+		ArrAppend,
+		ArrAppend,
+		ArrRemove,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1418,19 +1572,19 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 
 func TestVM_Exec_ArrAt(t *testing.T) {
 	code := []byte{
-		PUSH, 0x01, 0x02, 0x00, // index for ARRAT
-		PUSH, 0x01, 0xBB, 0x00,
-		PUSH, 0x01, 0xAA, 0x00,
-		PUSH, 0x01, 0xFF, 0x00,
+		Push, 2, 0x02, 0x00, // index for ARRAT
+		Push, 2, 0xBB, 0x00,
+		Push, 2, 0xAA, 0x00,
+		Push, 2, 0xFF, 0x00,
 
-		NEWARR,
+		NewArr,
 
-		ARRAPPEND,
-		ARRAPPEND,
-		ARRAPPEND,
+		ArrAppend,
+		ArrAppend,
+		ArrAppend,
 
-		ARRAT,
-		HALT,
+		ArrAt,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1478,7 +1632,8 @@ func TestVM_Exec_NonValidOpCode(t *testing.T) {
 
 func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 	code := []byte{
-		PUSH, 0x00, 0x00, PUSH, 0x0b, 0x01, 0x00, 0x03, 0x12, 0x05,
+		Push, 1, 0x00,
+		Push, 0x0c, 0x01, 0x00, 0x03, 0x12, 0x05,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1497,9 +1652,9 @@ func TestVM_Exec_ArgumentsExceedInstructionSet(t *testing.T) {
 
 func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 	code := []byte{
-		PUSH, 0x00, 0x01,
+		Push, 1, 0x01,
 		SHA3,
-		SUB, 0x02, 0x03,
+		Sub, 0x02, 0x03,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1519,8 +1674,8 @@ func TestVM_Exec_PopOnEmptyStack(t *testing.T) {
 
 func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds(t *testing.T) {
 	code := []byte{
-		PUSH, 0, 20,
-		ROLL, 0,
+		Push, 1, 20,
+		Roll, 0,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1539,7 +1694,7 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds(t *testing.T) {
 
 func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds2(t *testing.T) {
 	code := []byte{
-		CALLEXT, 231,
+		CallExt, 231,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1559,7 +1714,7 @@ func TestVM_Exec_FuzzReproduction_InstructionSetOutOfBounds2(t *testing.T) {
 
 func TestVM_Exec_FuzzReproduction_IndexOutOfBounds1(t *testing.T) {
 	code := []byte{
-		SLOAD, 0, 0, 33,
+		LoadSt, 0, 0, 33,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1578,7 +1733,7 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds1(t *testing.T) {
 
 func TestVM_Exec_FuzzReproduction_IndexOutOfBounds2(t *testing.T) {
 	code := []byte{
-		PUSH, 4, 46, 110, 66, 50, 255, SSTORE, 123, 119,
+		PushInt, 4, 46, 110, 66, 50, 255, StoreSt, 123, 119,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1599,23 +1754,23 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds2(t *testing.T) {
 func TestVM_Exec_FunctionCallSub(t *testing.T) {
 	code := []byte{
 		// start ABI
-		CALLDATA,
-		DUP,
-		PUSH, 1, 0, 1,
-		EQ,
-		JMPIF, 0, 20,
-		DUP,
-		PUSH, 1, 0, 2,
-		EQ,
-		JMPIF, 0, 23,
-		HALT,
+		CallData,
+		Dup,
+		PushInt, 1, 0, 1,
+		Eq,
+		JmpTrue, 0, 20,
+		Dup,
+		PushInt, 1, 0, 2,
+		Eq,
+		JmpTrue, 0, 23,
+		Halt,
 		// end ABI
-		POP,
-		SUB,
-		HALT,
-		POP,
-		ADD,
-		HALT,
+		Pop,
+		Sub,
+		Halt,
+		Pop,
+		Add,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1642,23 +1797,23 @@ func TestVM_Exec_FunctionCallSub(t *testing.T) {
 func TestVM_Exec_FunctionCall(t *testing.T) {
 	code := []byte{
 		// start ABI
-		CALLDATA,
-		DUP,
-		PUSH, 1, 0, 1,
-		EQ,
-		JMPIF, 0, 20,
-		DUP,
-		PUSH, 1, 0, 2,
-		EQ,
-		JMPIF, 0, 23,
-		HALT,
+		CallData,
+		Dup,
+		PushInt, 1, 0, 1,
+		Eq,
+		JmpTrue, 0, 20,
+		Dup,
+		PushInt, 1, 0, 2,
+		Eq,
+		JmpTrue, 0, 23,
+		Halt,
 		// end ABI
-		POP,
-		SUB,
-		HALT,
-		POP,
-		ADD,
-		HALT,
+		Pop,
+		Sub,
+		Halt,
+		Pop,
+		Add,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1684,7 +1839,7 @@ func TestVM_Exec_FunctionCall(t *testing.T) {
 
 func TestVM_Exec_GithubIssue13(t *testing.T) {
 	code := []byte{
-		ADDRESS, ARRAT,
+		Address, ArrAt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1703,7 +1858,7 @@ func TestVM_Exec_GithubIssue13(t *testing.T) {
 
 func TestVM_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 	code := []byte{
-		CALLER, CALLER, ARRAPPEND,
+		Caller, Caller, ArrAppend,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1723,7 +1878,7 @@ func TestVM_Exec_FuzzReproduction_ContextOpCode1(t *testing.T) {
 
 func TestVM_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 	code := []byte{
-		ADDRESS, CALLER, ARRAPPEND,
+		Address, Caller, ArrAppend,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1743,7 +1898,7 @@ func TestVM_Exec_FuzzReproduction_ContextOpCode2(t *testing.T) {
 
 func TestVM_Exec_FuzzReproduction_EdgecaseLastOpcodePlusOne(t *testing.T) {
 	code := []byte{
-		HALT + 1,
+		Halt + 1,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1762,10 +1917,10 @@ func TestVM_Exec_FuzzReproduction_EdgecaseLastOpcodePlusOne(t *testing.T) {
 
 func TestVM_PopBytes(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 8,
-		PUSH, 1, 0, 8,
-		ADD,
-		HALT,
+		PushInt, 1, 0, 8,
+		PushInt, 1, 0, 8,
+		Add,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1819,12 +1974,12 @@ func TestVM_FuzzTest_Reproduction_IndexOutOfRange(t *testing.T) {
 
 func TestVM_GasCalculation(t *testing.T) {
 	code := []byte{
-		PUSH, 64, 0, 8, 179, 91, 9, 9, 6, 136, 231, 56, 7, 146, 99, 170, 98, 183, 40, 118, 185, 95,
+		PushInt, 64, 0, 8, 179, 91, 9, 9, 6, 136, 231, 56, 7, 146, 99, 170, 98, 183, 40, 118, 185, 95,
 		106, 14, 143, 25, 99, 79, 76, 222, 197, 5, 218, 90, 216, 47, 218, 74, 53, 139, 62, 28, 104,
 		180, 139, 65, 103, 193, 244, 169, 85, 39, 160, 218, 158, 207, 118, 37, 78, 42, 186, 64, 4, 70, 70, 190, 177,
-		PUSH, 1, 0, 8,
-		ADD,
-		HALT,
+		PushInt, 1, 0, 8,
+		Add,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1844,10 +1999,10 @@ func TestVM_GasCalculation(t *testing.T) {
 
 func TestVM_PopBytesOutOfGas(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 8,
-		PUSH, 1, 0, 8,
-		ADD,
-		HALT,
+		PushInt, 1, 0, 8,
+		PushInt, 1, 0, 8,
+		Add,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -1969,75 +2124,75 @@ func modularExpContract(base big.Int, exponent big.Int, modulus big.Int) []byte 
 	addressForLoop := UInt16ToByteArray(uint16(20) + uint16(len(baseVal)) + uint16(len(modulusVal)) + uint16(len(exponentVal)))
 
 	contract := []byte{
-		PUSH,
+		PushInt,
 	}
 	contract = append(contract, baseVal...)
-	contract = append(contract, PUSH)
+	contract = append(contract, PushInt)
 	contract = append(contract, modulusVal...)
 	contract = append(contract, []byte{
-		DUP,
-		PUSH, 1, 0, 0,
-		EQ,
-		JMPIF,
+		Dup,
+		PushInt, 1, 0, 0,
+		Eq,
+		JmpTrue,
 	}...)
 	contract = append(contract, addressBeforeExp[1])
 	contract = append(contract, addressBeforeExp[0])
 	contract = append(contract, []byte{
-		PUSH, 1, 0, 1, // Counter (c)
-		PUSH, 1, 0, 0, //i
-		PUSH,
+		PushInt, 1, 0, 1, // Counter (c)
+		PushInt, 1, 0, 0, //i
+		PushInt,
 	}...)
 	contract = append(contract, exponentVal...)
 	contract = append(contract, []byte{
 		//LOOP start
 		//Duplicate arguments
-		ROLL, 2,
-		DUP, //Stack: [[0 11 75] [0 11 75] [0 13] [0 0] [0 1] [0 4]]
-		ROLL, 4,
-		DUP, // STACK Stack: [[04] [0 4] [0 11 75] [0 11 75] [0 13] [0 0] [0 1]]
+		Roll, 2,
+		Dup, //Stack: [[0 11 75] [0 11 75] [0 13] [0 0] [0 1] [0 4]]
+		Roll, 4,
+		Dup, // STACK Stack: [[04] [0 4] [0 11 75] [0 11 75] [0 13] [0 0] [0 1]]
 		// PUT in order
-		ROLL, 1, //Stack: [[0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 0] [0 1]]
-		ROLL, 4, //Stack: [[0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 1]]
-		ROLL, 4, //Stack: [[0 13] [0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 1]]
-		ROLL, 3, //Stack: [[0 4] [0 13] [0 0] [0 11 75] [0 4] [0 11 75] [0 1]]
-		ROLL, 4, //Stack: [[0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4] [0 1]]
-		ROLL, 5, //Stack: [[0 1] [0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4]]
+		Roll, 1, //Stack: [[0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 0] [0 1]]
+		Roll, 4, //Stack: [[0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 1]]
+		Roll, 4, //Stack: [[0 13] [0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 1]]
+		Roll, 3, //Stack: [[0 4] [0 13] [0 0] [0 11 75] [0 4] [0 11 75] [0 1]]
+		Roll, 4, //Stack: [[0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4] [0 1]]
+		Roll, 5, //Stack: [[0 1] [0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4]]
 		// Order: counter, modulus, base, exp, i, modulus, base
-		CALL,
+		Call,
 	}...)
 	contract = append(contract, byte(addressAfterExp[1]))
 	contract = append(contract, byte(addressAfterExp[0]))
 	contract = append(contract, []byte{
 		3,
 		// PUT in order
-		ROLL, 1,
-		ROLL, 1,
+		Roll, 1,
+		Roll, 1,
 
 		// Order: exp, i - counter, modulus, base,
-		DUP,
-		ROLL, 1,
-		PUSH, 1, 0, 1,
-		ADD,
-		DUP,
-		ROLL, 1,
-		ROLL, 1,
-		ROLL, 2,
-		LT,
-		JMPIF,
+		Dup,
+		Roll, 1,
+		PushInt, 1, 0, 1,
+		Add,
+		Dup,
+		Roll, 1,
+		Roll, 1,
+		Roll, 2,
+		Lt,
+		JmpTrue,
 	}...)
 	contract = append(contract, addressForLoop[1])
 	contract = append(contract, addressForLoop[0])
 	contract = append(contract, []byte{
 		// LOOP END
-		HALT,
+		Halt,
 
 		// FUNCTION Order: c, modulus, base,
-		LOAD, 2,
-		LOAD, 0,
-		MULT,
-		LOAD, 1,
-		MOD,
-		RET,
+		LoadLoc, 2,
+		LoadLoc, 0,
+		Mul,
+		LoadLoc, 1,
+		Mod,
+		Ret,
 	}...)
 
 	return contract
@@ -2045,22 +2200,22 @@ func modularExpContract(base big.Int, exponent big.Int, modulus big.Int) []byte 
 
 func TestVm_Exec_Loop(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 0, //i
-		PUSH, 1, 0, 13, // Exp
+		PushInt, 1, 0, 0, //i
+		PushInt, 1, 0, 13, // Exp
 
 		// Order: exp, i
-		DUP,
-		ROLL, 1,
-		PUSH, 1, 0, 1,
-		ADD,
-		DUP,
-		ROLL, 1,
-		ROLL, 1,
-		ROLL, 2,
-		LT,
-		JMPIF, 0, 8, // Adjust address
+		Dup,
+		Roll, 1,
+		PushInt, 1, 0, 1,
+		Add,
+		Dup,
+		Roll, 1,
+		Roll, 1,
+		Roll, 2,
+		Lt,
+		JmpTrue, 0, 8, // Adjust address
 		// LOOP END
-		HALT,
+		Halt,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -2079,58 +2234,58 @@ func TestVm_Exec_Loop(t *testing.T) {
 
 func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	code := []byte{
-		PUSH, 1, 0, 4, // Base
-		PUSH, 2, 0, 1, 241, // Modulus
+		PushInt, 1, 0, 4, // Base
+		PushInt, 2, 0, 1, 241, // Modulus
 		// IF modulus equals 0
-		DUP,
-		PUSH, 1, 0, 0,
-		EQ,
-		JMPIF, 0, 46, // Adjust address
+		Dup,
+		PushInt, 1, 0, 0,
+		Eq,
+		JmpTrue, 0, 46, // Adjust address
 
-		PUSH, 1, 0, 1, // Counter (c)
-		PUSH, 1, 0, 0, //i
-		PUSH, 1, 0, 13, // Exp
+		PushInt, 1, 0, 1, // Counter (c)
+		PushInt, 1, 0, 0, //i
+		PushInt, 1, 0, 13, // Exp
 
 		//LOOP start
 		//Duplicate arguments
-		ROLL, 2,
-		DUP, //Stack: [[0 11 75] [0 11 75] [0 13] [0 0] [0 1] [0 4]]
-		ROLL, 4,
-		DUP, // STACK Stack: [[04] [0 4] [0 11 75] [0 11 75] [0 13] [0 0] [0 1]]
+		Roll, 2,
+		Dup, //Stack: [[0 11 75] [0 11 75] [0 13] [0 0] [0 1] [0 4]]
+		Roll, 4,
+		Dup, // STACK Stack: [[04] [0 4] [0 11 75] [0 11 75] [0 13] [0 0] [0 1]]
 		// PUT in order
-		ROLL, 1, //Stack: [[0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 0] [0 1]]
-		ROLL, 4, //Stack: [[0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 1]]
-		ROLL, 4, //Stack: [[0 13] [0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 1]]
-		ROLL, 3, //Stack: [[0 4] [0 13] [0 0] [0 11 75] [0 4] [0 11 75] [0 1]]
-		ROLL, 4, //Stack: [[0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4] [0 1]]
-		ROLL, 5, //Stack: [[0 1] [0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4]]
+		Roll, 1, //Stack: [[0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 0] [0 1]]
+		Roll, 4, //Stack: [[0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 1]]
+		Roll, 4, //Stack: [[0 13] [0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 1]]
+		Roll, 3, //Stack: [[0 4] [0 13] [0 0] [0 11 75] [0 4] [0 11 75] [0 1]]
+		Roll, 4, //Stack: [[0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4] [0 1]]
+		Roll, 5, //Stack: [[0 1] [0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4]]
 		// Order: counter, modulus, base, exp, i, modulus, base
-		CALL, 0, 76, 3,
+		Call, 0, 76, 3,
 		// PUT in order
-		ROLL, 1,
-		ROLL, 1,
+		Roll, 1,
+		Roll, 1,
 
 		// Order: exp, i - counter, modulus, base,
-		DUP,
-		ROLL, 1,
-		PUSH, 1, 0, 1,
-		ADD,
-		DUP,
-		ROLL, 1,
-		ROLL, 1,
-		ROLL, 2,
-		LT,
-		JMPIF, 0, 30, // Adjust address
+		Dup,
+		Roll, 1,
+		PushInt, 1, 0, 1,
+		Add,
+		Dup,
+		Roll, 1,
+		Roll, 1,
+		Roll, 2,
+		Lt,
+		JmpTrue, 0, 30, // Adjust address
 		// LOOP END
-		HALT,
+		Halt,
 
 		// FUNCTION Order: c, modulus, base,
-		LOAD, 2,
-		LOAD, 0,
-		MULT,
-		LOAD, 1,
-		MOD,
-		RET,
+		LoadLoc, 2,
+		LoadLoc, 0,
+		Mul,
+		LoadLoc, 1,
+		Mod,
+		Ret,
 	}
 
 	vm := NewTestVM([]byte{})
@@ -2146,5 +2301,25 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 
 	if ByteArrayToInt(actual[1:]) != expected {
 		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
+// Helper functions
+// ----------------
+
+func execCode(code []byte) (VM, bool) {
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	isSuccess := vm.Exec(false)
+
+	return vm, isSuccess
+}
+
+func assertBytes(t *testing.T, actual []byte, expected ...byte) {
+	assert.Equal(t, len(actual), len(expected))
+
+	for i, b := range actual {
+		assert.Equal(t, b, expected[i])
 	}
 }
