@@ -49,6 +49,26 @@ func TestVM_Exec_GasConsumption(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_PushInt(t *testing.T) {
+	code := []byte{
+		PushInt, 0, 0, // 0
+		PushInt, 1, 1, 1, // -1
+		PushInt, 1, 0, 255, // 255
+		PushInt, 2, 0, 1, 0, // 256
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	expected := []int64{256, 255, -1, 0}
+
+	for _, i := range expected {
+		bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+		assert.Equal(t, bint.Cmp(big.NewInt(i)), 0)
+	}
+}
+
 func TestVM_Exec_PushOutOfBounds(t *testing.T) {
 	code := []byte{
 		PushInt, 0, 125,
