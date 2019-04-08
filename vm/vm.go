@@ -534,6 +534,17 @@ func (vm *VM) Exec(trace bool) bool {
 				vm.pc = ByteArrayToInt(nextInstruction)
 			}
 
+		case JmpFalse:
+			nextInstruction, errArg := vm.fetchMany(opCode.Name, 2)
+			right, errStack := vm.PopBytes(opCode)
+			if !vm.checkErrors(opCode.Name, errArg, errStack) {
+				return false
+			}
+
+			if !ByteArrayToBool(right) {
+				vm.pc = ByteArrayToInt(nextInstruction)
+			}
+
 		case Call:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
 			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack

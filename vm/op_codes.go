@@ -27,6 +27,7 @@ const (
 	NoOp
 	Jmp
 	JmpTrue
+	JmpFalse
 	Call
 	CallTrue
 	CallExt
@@ -103,7 +104,8 @@ var OpCodes = []OpCode{
 	{ShiftR, "shiftl", 1, []int{BYTE}, 1, 2},
 	{NoOp, "nop", 0, nil, 1, 1},
 	{Jmp, "jmp", 1, []int{LABEL}, 1, 1},
-	{JmpTrue, "jmpif", 1, []int{LABEL}, 1, 1},
+	{JmpTrue, "jmptrue", 1, []int{LABEL}, 1, 1},
+	{JmpFalse, "jmpfalse", 1, []int{LABEL}, 1, 1},
 	{Call, "call", 2, []int{LABEL, BYTE}, 1, 1},
 	{CallTrue, "callif", 2, []int{LABEL, BYTE}, 1, 1},
 	{CallExt, "callext", 3, []int{ADDR, BYTE, BYTE, BYTE, BYTE, BYTE}, 1000, 2},
