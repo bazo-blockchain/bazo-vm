@@ -15,6 +15,7 @@ const (
 	Mul
 	Div
 	Mod
+	Exp
 	Neg
 	Eq
 	NotEq
@@ -93,6 +94,7 @@ var OpCodes = []OpCode{
 	{Mul, "mult", 0, nil, 1, 2},
 	{Div, "div", 0, nil, 1, 2},
 	{Mod, "mod", 0, nil, 1, 2},
+	{Exp, "exp", 0, nil, 1, 2},
 	{Neg, "neg", 0, nil, 1, 2},
 	{Eq, "eq", 0, nil, 1, 2},
 	{NotEq, "neq", 0, nil, 1, 2},

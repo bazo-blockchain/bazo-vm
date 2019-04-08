@@ -357,6 +357,35 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
+		case Exp:
+			// TODO Gas bei jedem Durchgang um 1 verringern
+			left, rerr := vm.PopSignedBigInt(opCode)
+			right, lerr := vm.PopSignedBigInt(opCode)
+
+			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+				return false
+			}
+
+			if right.Cmp(big.NewInt(0)) == -1 {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Negative exponents are not allowed."))
+				return false
+			}
+
+			multiplicator := left
+
+			// Starts at 1 because the first calculation is done immediately
+			// Otherwise 5^2 leads to two iterations and the result would be 125
+			for i := 1; right.CmpAbs(big.NewInt(int64(i))) == 1; i++ {
+				left.Mul(&left, &multiplicator)
+
+				err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
+
+				if err != nil {
+					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+					return false
+				}
+			}
+
 		case Div:
 			right, rerr := vm.PopSignedBigInt(opCode)
 			left, lerr := vm.PopSignedBigInt(opCode)
