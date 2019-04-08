@@ -358,7 +358,9 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case Exp:
-			// TODO Gas bei jedem Durchgang um 1 verringern
+			// Return the gasPrice of this OpCode as gas is removed in each multiplication round
+			vm.fee = vm.fee + opCode.gasPrice
+
 			left, rerr := vm.PopSignedBigInt(opCode)
 			right, lerr := vm.PopSignedBigInt(opCode)
 
@@ -371,12 +373,21 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
+			gasCostPerRound := opCode.gasPrice
 			multiplicator := left
-
 			// Starts at 1 because the first calculation is done immediately
 			// Otherwise 5^2 leads to two iterations and the result would be 125
 			for i := 1; right.CmpAbs(big.NewInt(int64(i))) == 1; i++ {
+
+				if int64(vm.fee-gasCostPerRound) < 0 {
+					vm.evaluationStack.Push([]byte(opCode.Name + ": Out of gas" ))
+					return false
+				}
+
 				left.Mul(&left, &multiplicator)
+
+				// As multiplication is done within this
+				vm.fee = vm.fee - gasCostPerRound
 
 				err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
 

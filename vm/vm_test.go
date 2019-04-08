@@ -418,6 +418,29 @@ func TestVM_Exec_Negative_Exponent(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_Exponent_Out_of_Gas(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 100,
+		PushInt, 1, 0, 1,
+		Exp,
+		Halt,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+	expected := "exp: Out of gas"
+	actual := string(tos)
+
+	if expected != actual {
+		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
 func TestVM_Exec_Modulo(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 5,
