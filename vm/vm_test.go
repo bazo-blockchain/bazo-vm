@@ -409,7 +409,6 @@ func TestVM_Exec_Negative_Exponent(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-
 	expected := "exp: Negative exponents are not allowed."
 	actual := string(tos)
 
