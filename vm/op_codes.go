@@ -37,12 +37,12 @@ const (
 	StoreSt
 	LoadLoc
 	LoadSt
-	Address // Address of account
-	Issuer  // Owner of smart contract account
-	Balance // Balance of account
+	Address  // Address of account
+	Issuer   // Owner of smart contract account
+	Balance  // Balance of account
 	Caller
-	CallVal  // Amount of bazo coins transacted in transaction
-	CallData // Parameters and function signature hash
+	CallVal   // Amount of bazo coins transacted in transaction
+	CallData  // Parameters and function signature hash
 	NewMap
 	MapHasKey
 	MapPush
