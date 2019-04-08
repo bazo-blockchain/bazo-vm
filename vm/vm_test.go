@@ -645,7 +645,7 @@ func TestVM_Exec_Shiftr(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_Jmpif(t *testing.T) {
+func TestVM_Exec_Jmptrue(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 3,
 		PushInt, 1, 0, 4,
@@ -653,6 +653,31 @@ func TestVM_Exec_Jmpif(t *testing.T) {
 		PushInt, 1, 0, 20,
 		Lt,
 		JmpTrue, 0, 21,
+		Push, 1, 3,
+		NoOp,
+		NoOp,
+		NoOp,
+		Halt,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
+
+	if vm.evaluationStack.GetLength() != 0 {
+		t.Errorf("After calling and returning, callStack lenght should be 0, but is %v", vm.evaluationStack.GetLength())
+	}
+}
+
+func TestVM_Exec_Jmpfalse(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 3,
+		PushInt, 1, 0, 4,
+		Add,
+		PushInt, 1, 0, 20,
+		Gt,
+		JmpFalse, 0, 21,
 		Push, 1, 3,
 		NoOp,
 		NoOp,
