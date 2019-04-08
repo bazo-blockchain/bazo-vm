@@ -347,7 +347,7 @@ func TestVM_Exec_Exponent(t *testing.T) {
 
 func TestVM_Exec_Big_Exponent(t *testing.T) {
 	code := []byte{
-		PushInt, 1, 0, 12,
+		PushInt, 1, 0, 8,
 		PushInt, 1, 0, 5,
 		Exp,
 		Halt,
@@ -360,7 +360,30 @@ func TestVM_Exec_Big_Exponent(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := 244140625
+	expected := 390625
+	actual := ByteArrayToInt(tos)
+
+	if expected != actual {
+		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
+func TestVM_Exec_Zero_Exponent(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 0,
+		PushInt, 1, 0, 5,
+		Exp,
+		Halt,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+	expected := 1
 	actual := ByteArrayToInt(tos)
 
 	if expected != actual {
