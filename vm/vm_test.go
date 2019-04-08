@@ -692,7 +692,40 @@ func TestVM_Exec_Jmpfalse(t *testing.T) {
 	vm.Exec(false)
 
 	if vm.evaluationStack.GetLength() != 0 {
-		t.Errorf("After calling and returning, callStack lenght should be 0, but is %v", vm.evaluationStack.GetLength())
+		t.Errorf("After calling and returning, evaluationStack lenght should be 0, but is %v", vm.evaluationStack.GetLength())
+	}
+}
+
+func TestVM_Exec_Jmpfalse_Negative(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 3,
+		PushInt, 1, 0, 4,
+		Add,
+		PushInt, 1, 0, 20,
+		Lt,
+		// Does not Jump
+		JmpFalse, 0, 21,
+		Push, 1, 3,
+		NoOp,
+		NoOp,
+		NoOp,
+		Halt,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	vm.context = mc
+	vm.Exec(false)
+
+	if vm.evaluationStack.GetLength() != 2 {
+		t.Errorf("After calling and returning, evaluationStack lenght should be 2, but is %v", vm.evaluationStack.GetLength())
+	}
+
+	value, _ := vm.evaluationStack.PopIndexAt(0)
+	result := uint(value[0])
+
+	if result != 3 {
+		t.Errorf("The value on the evaluationStack should be 3 but is %v", result)
 	}
 }
 
