@@ -1046,7 +1046,34 @@ func TestVM_Exec_CallExt(t *testing.T) {
 	vm.Exec(false)
 }
 
-func TestVM_Exec_Sload(t *testing.T) {
+func TestVM_Exec_StoreLoc(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 1, // local variable x = 1
+		PushInt, 1, 0, 2, // local variable y = 2
+		Call, 0, 14, 2, // Call function with 2 variables (x & y)
+		Halt,
+		NoOp,
+		PushInt, 1, 0, 4, // Function starts here at byte 14
+		StoreLoc, 0, // Override local variable x with 4
+		PushInt, 1, 0, 5,
+		StoreLoc, 1, // override local variable y with 5
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	callstackTos, err := vm.callStack.Peek()
+	assert.NilError(t, err)
+	assert.Equal(t, len(callstackTos.variables), 2)
+
+	x := callstackTos.variables[0]
+	y := callstackTos.variables[1]
+	assert.Equal(t, x.Cmp(big.NewInt(4)), 0)
+	assert.Equal(t, y.Cmp(big.NewInt(5)), 0)
+}
+
+func TestVM_Exec_LoadSt(t *testing.T) {
 	code := []byte{
 		LoadSt, 1,
 		LoadSt, 0,
@@ -1087,7 +1114,7 @@ func TestVM_Exec_Sload(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_Sstore(t *testing.T) {
+func TestVM_Exec_StoreSt(t *testing.T) {
 	code := []byte{
 		PushInt, 9, 72, 105, 32, 84, 104, 101, 114, 101, 33, 33,
 		StoreSt, 0,
@@ -1924,7 +1951,7 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds1(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "sload: Index out of bounds"
+	expected := "loadst: Index out of bounds"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)
@@ -1944,7 +1971,7 @@ func TestVM_Exec_FuzzReproduction_IndexOutOfBounds2(t *testing.T) {
 
 	tos, _ := vm.evaluationStack.Pop()
 
-	expected := "sstore: Index out of bounds"
+	expected := "storest: Index out of bounds"
 	actual := string(tos)
 	if actual != expected {
 		t.Errorf("Expected error message to be '%v' but was '%v'", expected, actual)

@@ -38,12 +38,12 @@ const (
 	StoreSt
 	LoadLoc
 	LoadSt
-	Address  // Address of account
-	Issuer   // Owner of smart contract account
-	Balance  // Balance of account
+	Address // Address of account
+	Issuer  // Owner of smart contract account
+	Balance // Balance of account
 	Caller
-	CallVal   // Amount of bazo coins transacted in transaction
-	CallData  // Parameters and function signature hash
+	CallVal  // Amount of bazo coins transacted in transaction
+	CallData // Parameters and function signature hash
 	NewMap
 	MapHasKey
 	MapPush
@@ -113,10 +113,10 @@ var OpCodes = []OpCode{
 	{CallExt, "callext", 3, []int{ADDR, BYTE, BYTE, BYTE, BYTE, BYTE}, 1000, 2},
 	{Ret, "ret", 0, nil, 1, 1},
 	{Size, "size", 0, nil, 1, 1},
-	{StoreLoc, "store", 0, nil, 1, 2},
-	{StoreSt, "sstore", 1, []int{BYTE}, 1000, 2},
-	{LoadLoc, "load", 1, []int{BYTE}, 1, 2},
-	{LoadSt, "sload", 1, []int{BYTE}, 10, 2},
+	{StoreLoc, "storeloc", 1, []int{BYTE}, 1, 2},
+	{StoreSt, "storest", 1, []int{BYTE}, 1000, 2},
+	{LoadLoc, "loadloc", 1, []int{BYTE}, 1, 2},
+	{LoadSt, "loadst", 1, []int{BYTE}, 10, 2},
 	{Address, "address", 0, nil, 1, 1},
 	{Issuer, "issuer", 0, nil, 1, 1},
 	{Balance, "balance", 0, nil, 1, 1},
