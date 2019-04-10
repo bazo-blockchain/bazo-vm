@@ -486,47 +486,26 @@ func (vm *VM) Exec(trace bool) bool {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
-
 		case Lt:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			isSuccess := vm.evaluateRelationalComp(opCode, -1)
+			if !isSuccess {
 				return false
 			}
-
-			result := left.Cmp(&right) == -1
-			vm.evaluationStack.Push(BoolToByteArray(result))
-
 		case Gt:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			isSuccess := vm.evaluateRelationalComp(opCode, 1)
+			if !isSuccess {
 				return false
 			}
-
-			result := left.Cmp(&right) == 1
-			vm.evaluationStack.Push(BoolToByteArray(result))
-
 		case LtEq:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			isSuccess := vm.evaluateRelationalComp(opCode, -1, 0)
+			if !isSuccess {
 				return false
 			}
-
-			result := left.Cmp(&right) == -1 || left.Cmp(&right) == 0
-			vm.evaluationStack.Push(BoolToByteArray(result))
-
 		case GtEq:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			isSuccess := vm.evaluateRelationalComp(opCode, 0, 1)
+			if !isSuccess {
 				return false
 			}
-
-			result := left.Cmp(&right) == 1 || left.Cmp(&right) == 0
-			vm.evaluationStack.Push(BoolToByteArray(result))
-
 		case ShiftL:
 			nrOfShifts, errArg := vm.fetch(opCode.Name)
 			tos, errStack := vm.PopSignedBigInt(opCode)
@@ -1325,4 +1304,40 @@ func (vm *VM) GetErrorMsg() string {
 		return "Peek on empty Stack"
 	}
 	return string(tos)
+}
+
+func (vm *VM) evaluateRelationalComp(opCode OpCode, expectedResult ...int) bool {
+	right, rerr := vm.PopBytes(opCode)
+	left, lerr := vm.PopBytes(opCode)
+	if !vm.checkErrors(opCode.Name, rerr, lerr) {
+		return false
+	}
+
+	var result int
+	// char has always one byte
+	if len(left) == 1 && len(right) == 1 {
+		result = bytes.Compare(left, right)
+	} else {
+		leftInt, lerr := SignedBigIntConversion(left, nil)
+		rightInt, rerr := SignedBigIntConversion(right, nil)
+
+		if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			return false
+		}
+		result = leftInt.Cmp(&rightInt)
+	}
+
+	var compResult bool
+	for _, r := range expectedResult {
+		if r == result {
+			compResult = true
+		}
+	}
+
+	err := vm.evaluationStack.Push(BoolToByteArray(compResult))
+	if err != nil {
+		_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+		return false
+	}
+	return true
 }

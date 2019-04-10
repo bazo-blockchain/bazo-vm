@@ -668,6 +668,36 @@ func TestVM_Exec_Lt(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_LtChar(t *testing.T) {
+	code := []byte{
+		PushChar, 0,
+		PushChar, 70,
+		Lt,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
+}
+
+func TestVM_Exec_LtChar_Negative(t *testing.T) {
+	code := []byte{
+		PushChar, 70,
+		PushChar, 0,
+		Lt,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 0)
+}
+
 func TestVM_Exec_Gt(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 6,
@@ -691,6 +721,36 @@ func TestVM_Exec_Gt(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_GtChar(t *testing.T) {
+	code := []byte{
+		PushChar, 70,
+		PushChar, 0,
+		Gt,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
+}
+
+func TestVM_Exec_GtChar_Negative(t *testing.T) {
+	code := []byte{
+		PushChar, 0,
+		PushChar, 70,
+		Gt,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 0)
+}
+
 func TestVM_Exec_Lte_islower(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 4,
@@ -712,7 +772,6 @@ func TestVM_Exec_Lte_islower(t *testing.T) {
 	if !ByteArrayToBool(tos) {
 		t.Errorf("Actual value is %v, should be 1 after evaluating 4 <= 6", tos[0])
 	}
-
 }
 
 func TestVM_Exec_Lte_isequals(t *testing.T) {
@@ -736,6 +795,21 @@ func TestVM_Exec_Lte_isequals(t *testing.T) {
 	if !ByteArrayToBool(tos) {
 		t.Errorf("Actual value is %v, should be 1 after evaluating 6 <= 6", tos[0])
 	}
+}
+
+func TestVM_Exec_LtEq_Char(t *testing.T) {
+	code := []byte{
+		PushChar, 0,
+		PushChar, 0,
+		LtEq,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
 }
 
 func TestVM_Exec_Gte_isGreater(t *testing.T) {
@@ -782,6 +856,21 @@ func TestVM_Exec_Gte_isEqual(t *testing.T) {
 	if !ByteArrayToBool(tos) {
 		t.Errorf("Actual value is %v, should be 1 after evaluating 6 >= 6", tos[0])
 	}
+}
+
+func TestVM_Exec_GtEq_Char(t *testing.T) {
+	code := []byte{
+		PushChar, 70,
+		PushChar, 70,
+		GtEq,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
 }
 
 func TestVM_Exec_Shiftl(t *testing.T) {
