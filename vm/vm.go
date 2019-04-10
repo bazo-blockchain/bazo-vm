@@ -450,10 +450,10 @@ func (vm *VM) Exec(trace bool) bool {
 				err = fmt.Errorf("unable to negate %v", tos[0])
 			}
 
-			vm.evaluationStack.Push(tos)
+			err = vm.evaluationStack.Push(tos)
 
 			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 		case Eq:
@@ -468,7 +468,7 @@ func (vm *VM) Exec(trace bool) bool {
 			err := vm.evaluationStack.Push(BoolToByteArray(result == 0))
 
 			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 		case NotEq:
