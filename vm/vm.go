@@ -433,17 +433,28 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case Neg:
-			tos, err := vm.PopSignedBigInt(opCode)
+			tos, err := vm.PopBytes(opCode)
 
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			tos.Neg(&tos)
+			switch tos[0] {
+			case 1:
+				tos[0] = 0
+			case 0:
+				tos[0] = 1
+			default:
+				err = fmt.Errorf("unable to negate %v", tos[0])
+			}
 
-			vm.evaluationStack.Push(SignedByteArrayConversion(tos))
+			vm.evaluationStack.Push(tos)
 
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
 		case Eq:
 			right, rerr := vm.PopUnsignedBigInt(opCode)
 			left, lerr := vm.PopUnsignedBigInt(opCode)

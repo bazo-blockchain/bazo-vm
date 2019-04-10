@@ -508,6 +508,48 @@ func TestVM_Exec_Negate(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_Negate_True(t *testing.T) {
+	code := []byte{
+		PushBool, 1,
+		Neg,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 0)
+}
+
+func TestVM_Exec_Negate_False(t *testing.T) {
+	code := []byte{
+		PushBool, 0,
+		Neg,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
+}
+
+func TestVM_Exec_Negate_Error(t *testing.T) {
+	code := []byte{
+		PushStr, 2, 3, 4,
+		Neg,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "neg: unable to negate 3")
+}
+
 func TestVM_Exec_Division(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 6,
