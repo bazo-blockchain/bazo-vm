@@ -600,8 +600,8 @@ func TestVM_Exec_DivisionByZero(t *testing.T) {
 
 func TestVM_Exec_Eq(t *testing.T) {
 	code := []byte{
-		PushInt, 1, 0, 6,
-		PushInt, 1, 0, 6,
+		Push, 3, 1, 0, 6,
+		Push, 3, 1, 0, 6,
 		Eq,
 		Halt,
 	}
@@ -623,8 +623,8 @@ func TestVM_Exec_Eq(t *testing.T) {
 
 func TestVM_Exec_Neq(t *testing.T) {
 	code := []byte{
-		PushInt, 1, 0, 6,
-		PushInt, 1, 0, 5,
+		Push, 3, 1, 0, 6,
+		Push, 3, 1, 0, 5,
 		NotEq,
 		Halt,
 	}

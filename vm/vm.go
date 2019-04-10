@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"encoding/binary"
@@ -456,24 +457,35 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 		case Eq:
-			right, rerr := vm.PopUnsignedBigInt(opCode)
-			left, lerr := vm.PopUnsignedBigInt(opCode)
+			right, rerr := vm.PopBytes(opCode)
+			left, lerr := vm.PopBytes(opCode)
+
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			result := left.Cmp(&right) == 0
-			vm.evaluationStack.Push(BoolToByteArray(result))
+			result := bytes.Compare(left, right)
+			err := vm.evaluationStack.Push(BoolToByteArray(result == 0))
 
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
 		case NotEq:
-			right, rerr := vm.PopUnsignedBigInt(opCode)
-			left, lerr := vm.PopUnsignedBigInt(opCode)
+			right, rerr := vm.PopBytes(opCode)
+			left, lerr := vm.PopBytes(opCode)
+
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			result := left.Cmp(&right) != 0
-			vm.evaluationStack.Push(BoolToByteArray(result))
+			result := bytes.Compare(left, right)
+			err := vm.evaluationStack.Push(BoolToByteArray(result != 0))
+
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
 
 		case Lt:
 			right, rerr := vm.PopSignedBigInt(opCode)
