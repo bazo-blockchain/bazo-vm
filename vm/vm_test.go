@@ -898,8 +898,8 @@ func TestVM_Exec_Jmp(t *testing.T) {
 
 func TestVM_Exec_Call(t *testing.T) {
 	code := []byte{
-		Push, 1, 10,
-		Push, 1, 8,
+		PushInt, 1, 0, 10,
+		PushInt, 1, 0, 8,
 		Call, 0, 13, 2,
 		Halt,
 		NoOp,
@@ -1067,10 +1067,8 @@ func TestVM_Exec_StoreLoc(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(callstackTos.variables), 2)
 
-	x := callstackTos.variables[0]
-	y := callstackTos.variables[1]
-	assert.Equal(t, x.Cmp(big.NewInt(4)), 0)
-	assert.Equal(t, y.Cmp(big.NewInt(5)), 0)
+	assertBytes(t, callstackTos.variables[0], 0, 4)
+	assertBytes(t, callstackTos.variables[1], 0, 5)
 }
 
 func TestVM_Exec_LoadSt(t *testing.T) {

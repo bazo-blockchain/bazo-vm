@@ -16,10 +16,10 @@ func TestCallStack_NewCallStack(t *testing.T) {
 func TestCallStack_Push(t *testing.T) {
 	cs := NewCallStack()
 
-	variables := map[int]big.Int{
-		0: *big.NewInt(int64(4)),
-		1: *big.NewInt(int64(5)),
-		2: *big.NewInt(int64(6)),
+	variables := map[int][]byte{
+		0: SignedByteArrayConversion(*big.NewInt(int64(4))),
+		1: SignedByteArrayConversion(*big.NewInt(int64(5))),
+		2: SignedByteArrayConversion(*big.NewInt(int64(6))),
 	}
 
 	cs.Push(&Frame{variables: variables, returnAddress: 3})
@@ -37,19 +37,19 @@ func TestCallStack_Push(t *testing.T) {
 func TestCallStack_MultiplePushPop(t *testing.T) {
 	cs := NewCallStack()
 
-	variables1 := map[int]big.Int{
-		0: *big.NewInt(int64(4)),
+	variables1 := map[int][]byte{
+		0: SignedByteArrayConversion(*big.NewInt(int64(4))),
 	}
 
-	variables2 := map[int]big.Int{
-		0: *big.NewInt(int64(4)),
-		1: *big.NewInt(int64(5)),
+	variables2 := map[int][]byte{
+		0: SignedByteArrayConversion(*big.NewInt(int64(4))),
+		1: SignedByteArrayConversion(*big.NewInt(int64(5))),
 	}
 
-	variables3 := map[int]big.Int{
-		0: *big.NewInt(int64(4)),
-		1: *big.NewInt(int64(5)),
-		2: *big.NewInt(int64(6)),
+	variables3 := map[int][]byte{
+		0: SignedByteArrayConversion(*big.NewInt(int64(4))),
+		1: SignedByteArrayConversion(*big.NewInt(int64(5))),
+		2: SignedByteArrayConversion(*big.NewInt(int64(6))),
 	}
 
 	cs.Push(&Frame{variables: variables1, returnAddress: 0})

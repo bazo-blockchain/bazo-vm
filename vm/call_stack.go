@@ -2,11 +2,10 @@ package vm
 
 import (
 	"errors"
-	"math/big"
 )
 
 type Frame struct {
-	variables     map[int]big.Int
+	variables     map[int][]byte
 	returnAddress int
 }
 
@@ -31,15 +30,13 @@ func (cs *CallStack) Pop() (frame *Frame, err error) {
 		element := (*cs).values[cs.GetLength()-1]
 		cs.values = cs.values[:cs.GetLength()-1]
 		return element, nil
-	} else {
-		return nil, errors.New("pop() on empty callStack")
 	}
+	return nil, errors.New("pop() on empty callStack")
 }
 
 func (cs *CallStack) Peek() (frame *Frame, err error) {
 	if (*cs).GetLength() > 0 {
 		return (*cs).values[cs.GetLength()-1], nil
-	} else {
-		return nil, errors.New("peek() on empty callStack")
 	}
+	return nil, errors.New("peek() on empty callStack")
 }
