@@ -2,7 +2,6 @@
 
 # Format the staged Go files only
 for i in $(git diff --name-only --cached | grep ".go"); do
-    gofmt -l -w -s "$i"
+    gofmt -l -w -s "$i" | (echo -n "Auto formatted: " && cat)
     git add "$i";
-    echo "Auto formatted: $i"
 done;
