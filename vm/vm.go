@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"encoding/binary"
@@ -90,7 +91,7 @@ func (vm *VM) trace() {
 		case BYTE:
 			if len(vm.code)-vm.pc > 0 {
 				args = []byte{vm.code[vm.pc+1+counter]}
-				counter += 1
+				counter++
 				formattedArgs += fmt.Sprintf("%v (byte) ", args[:])
 			}
 
@@ -155,9 +156,8 @@ func (vm *VM) Exec(trace bool) bool {
 		if vm.fee < opCode.gasPrice {
 			vm.evaluationStack.Push([]byte("vm.exec(): out of gas"))
 			return false
-		} else {
-			vm.fee -= opCode.gasPrice
 		}
+		vm.fee -= opCode.gasPrice
 
 		// Decode
 		switch opCode.code {
@@ -434,77 +434,79 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case Neg:
-			tos, err := vm.PopSignedBigInt(opCode)
+			tos, err := vm.PopBytes(opCode)
 
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			tos.Neg(&tos)
+			switch tos[0] {
+			case 1:
+				tos[0] = 0
+			case 0:
+				tos[0] = 1
+			default:
+				err = fmt.Errorf("unable to negate %v", tos[0])
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
 
-			vm.evaluationStack.Push(SignedByteArrayConversion(tos))
-
+			err = vm.evaluationStack.Push(tos)
+			if err != nil {
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
 		case Eq:
-			right, rerr := vm.PopUnsignedBigInt(opCode)
-			left, lerr := vm.PopUnsignedBigInt(opCode)
+			right, rerr := vm.PopBytes(opCode)
+			left, lerr := vm.PopBytes(opCode)
+
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			result := left.Cmp(&right) == 0
-			vm.evaluationStack.Push(BoolToByteArray(result))
+			result := bytes.Compare(left, right)
+			err := vm.evaluationStack.Push(BoolToByteArray(result == 0))
 
+			if err != nil {
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
 		case NotEq:
-			right, rerr := vm.PopUnsignedBigInt(opCode)
-			left, lerr := vm.PopUnsignedBigInt(opCode)
+			right, rerr := vm.PopBytes(opCode)
+			left, lerr := vm.PopBytes(opCode)
+
 			if !vm.checkErrors(opCode.Name, rerr, lerr) {
 				return false
 			}
 
-			result := left.Cmp(&right) != 0
-			vm.evaluationStack.Push(BoolToByteArray(result))
+			result := bytes.Compare(left, right)
+			err := vm.evaluationStack.Push(BoolToByteArray(result != 0))
 
+			if err != nil {
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
 		case Lt:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			isSuccess := vm.evaluateRelationalComp(opCode, -1)
+			if !isSuccess {
 				return false
 			}
-
-			result := left.Cmp(&right) == -1
-			vm.evaluationStack.Push(BoolToByteArray(result))
-
 		case Gt:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			isSuccess := vm.evaluateRelationalComp(opCode, 1)
+			if !isSuccess {
 				return false
 			}
-
-			result := left.Cmp(&right) == 1
-			vm.evaluationStack.Push(BoolToByteArray(result))
-
 		case LtEq:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			isSuccess := vm.evaluateRelationalComp(opCode, -1, 0)
+			if !isSuccess {
 				return false
 			}
-
-			result := left.Cmp(&right) == -1 || left.Cmp(&right) == 0
-			vm.evaluationStack.Push(BoolToByteArray(result))
-
 		case GtEq:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			isSuccess := vm.evaluateRelationalComp(opCode, 0, 1)
+			if !isSuccess {
 				return false
 			}
-
-			result := left.Cmp(&right) == 1 || left.Cmp(&right) == 0
-			vm.evaluationStack.Push(BoolToByteArray(result))
-
 		case ShiftL:
 			nrOfShifts, errArg := vm.fetch(opCode.Name)
 			tos, errStack := vm.PopSignedBigInt(opCode)
@@ -595,10 +597,10 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			frame := &Frame{returnAddress: vm.pc, variables: make(map[int]big.Int)}
+			frame := &Frame{returnAddress: vm.pc, variables: make(map[int][]byte)}
 
 			for i := int(argsToLoad) - 1; i >= 0; i-- {
-				frame.variables[i], err = vm.PopUnsignedBigInt(opCode)
+				frame.variables[i], err = vm.PopBytes(opCode)
 				if err != nil {
 					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
@@ -626,10 +628,10 @@ func (vm *VM) Exec(trace bool) bool {
 					return false
 				}
 
-				frame := &Frame{returnAddress: vm.pc, variables: make(map[int]big.Int)}
+				frame := &Frame{returnAddress: vm.pc, variables: make(map[int][]byte)}
 
 				for i := int(argsToLoad) - 1; i >= 0; i-- {
-					frame.variables[i], err = vm.PopUnsignedBigInt(opCode)
+					frame.variables[i], err = vm.PopBytes(opCode)
 					if err != nil {
 						vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 						return false
@@ -691,7 +693,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 		case StoreLoc:
 			address, errArgs := vm.fetch(opCode.Name)
-			right, errStack := vm.PopSignedBigInt(opCode)
+			right, errStack := vm.PopBytes(opCode)
 
 			if !vm.checkErrors(opCode.Name, errArgs, errStack) {
 				return false
@@ -734,8 +736,7 @@ func (vm *VM) Exec(trace bool) bool {
 
 			val := callstackTos.variables[int(address)]
 
-			err := vm.evaluationStack.Push(SignedByteArrayConversion(val))
-
+			err := vm.evaluationStack.Push(val)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -1215,9 +1216,8 @@ func (vm *VM) fetch(errorLocation string) (element byte, err error) {
 	if len(vm.code) > tempPc {
 		vm.pc++
 		return vm.code[tempPc], nil
-	} else {
-		return 0, errors.New("Instruction set out of bounds")
 	}
+	return 0, errors.New("Instruction set out of bounds")
 }
 
 func (vm *VM) fetchMany(errorLocation string, argument int) (elements []byte, err error) {
@@ -1225,9 +1225,8 @@ func (vm *VM) fetchMany(errorLocation string, argument int) (elements []byte, er
 	if len(vm.code)-tempPc > argument {
 		vm.pc += argument
 		return vm.code[tempPc : tempPc+argument], nil
-	} else {
-		return []byte{}, errors.New("Instruction set out of bounds")
 	}
+	return []byte{}, errors.New("Instruction set out of bounds")
 }
 
 func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
@@ -1306,4 +1305,40 @@ func (vm *VM) GetErrorMsg() string {
 		return "Peek on empty Stack"
 	}
 	return string(tos)
+}
+
+func (vm *VM) evaluateRelationalComp(opCode OpCode, expectedResult ...int) bool {
+	right, rerr := vm.PopBytes(opCode)
+	left, lerr := vm.PopBytes(opCode)
+	if !vm.checkErrors(opCode.Name, rerr, lerr) {
+		return false
+	}
+
+	var result int
+	// char has always one byte
+	if len(left) == 1 && len(right) == 1 {
+		result = bytes.Compare(left, right)
+	} else {
+		leftInt, lerr := SignedBigIntConversion(left, nil)
+		rightInt, rerr := SignedBigIntConversion(right, nil)
+
+		if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			return false
+		}
+		result = leftInt.Cmp(&rightInt)
+	}
+
+	var compResult bool
+	for _, r := range expectedResult {
+		if r == result {
+			compResult = true
+		}
+	}
+
+	err := vm.evaluationStack.Push(BoolToByteArray(compResult))
+	if err != nil {
+		_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+		return false
+	}
+	return true
 }

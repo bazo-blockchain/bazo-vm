@@ -508,6 +508,48 @@ func TestVM_Exec_Negate(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_Negate_True(t *testing.T) {
+	code := []byte{
+		PushBool, 1,
+		Neg,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 0)
+}
+
+func TestVM_Exec_Negate_False(t *testing.T) {
+	code := []byte{
+		PushBool, 0,
+		Neg,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
+}
+
+func TestVM_Exec_Negate_Error(t *testing.T) {
+	code := []byte{
+		PushStr, 2, 3, 4,
+		Neg,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(tos), "neg: unable to negate 3")
+}
+
 func TestVM_Exec_Division(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 6,
@@ -558,8 +600,8 @@ func TestVM_Exec_DivisionByZero(t *testing.T) {
 
 func TestVM_Exec_Eq(t *testing.T) {
 	code := []byte{
-		PushInt, 1, 0, 6,
-		PushInt, 1, 0, 6,
+		Push, 3, 1, 0, 6,
+		Push, 3, 1, 0, 6,
 		Eq,
 		Halt,
 	}
@@ -581,8 +623,8 @@ func TestVM_Exec_Eq(t *testing.T) {
 
 func TestVM_Exec_Neq(t *testing.T) {
 	code := []byte{
-		PushInt, 1, 0, 6,
-		PushInt, 1, 0, 5,
+		Push, 3, 1, 0, 6,
+		Push, 3, 1, 0, 5,
 		NotEq,
 		Halt,
 	}
@@ -626,6 +668,36 @@ func TestVM_Exec_Lt(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_LtChar(t *testing.T) {
+	code := []byte{
+		PushChar, 0,
+		PushChar, 70,
+		Lt,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
+}
+
+func TestVM_Exec_LtChar_Negative(t *testing.T) {
+	code := []byte{
+		PushChar, 70,
+		PushChar, 0,
+		Lt,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 0)
+}
+
 func TestVM_Exec_Gt(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 6,
@@ -649,6 +721,36 @@ func TestVM_Exec_Gt(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_GtChar(t *testing.T) {
+	code := []byte{
+		PushChar, 70,
+		PushChar, 0,
+		Gt,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
+}
+
+func TestVM_Exec_GtChar_Negative(t *testing.T) {
+	code := []byte{
+		PushChar, 0,
+		PushChar, 70,
+		Gt,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 0)
+}
+
 func TestVM_Exec_Lte_islower(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 4,
@@ -670,7 +772,6 @@ func TestVM_Exec_Lte_islower(t *testing.T) {
 	if !ByteArrayToBool(tos) {
 		t.Errorf("Actual value is %v, should be 1 after evaluating 4 <= 6", tos[0])
 	}
-
 }
 
 func TestVM_Exec_Lte_isequals(t *testing.T) {
@@ -694,6 +795,21 @@ func TestVM_Exec_Lte_isequals(t *testing.T) {
 	if !ByteArrayToBool(tos) {
 		t.Errorf("Actual value is %v, should be 1 after evaluating 6 <= 6", tos[0])
 	}
+}
+
+func TestVM_Exec_LtEq_Char(t *testing.T) {
+	code := []byte{
+		PushChar, 0,
+		PushChar, 0,
+		LtEq,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
 }
 
 func TestVM_Exec_Gte_isGreater(t *testing.T) {
@@ -740,6 +856,21 @@ func TestVM_Exec_Gte_isEqual(t *testing.T) {
 	if !ByteArrayToBool(tos) {
 		t.Errorf("Actual value is %v, should be 1 after evaluating 6 >= 6", tos[0])
 	}
+}
+
+func TestVM_Exec_GtEq_Char(t *testing.T) {
+	code := []byte{
+		PushChar, 70,
+		PushChar, 70,
+		GtEq,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+	assertBytes(t, tos, 1)
 }
 
 func TestVM_Exec_Shiftl(t *testing.T) {
@@ -898,8 +1029,8 @@ func TestVM_Exec_Jmp(t *testing.T) {
 
 func TestVM_Exec_Call(t *testing.T) {
 	code := []byte{
-		Push, 1, 10,
-		Push, 1, 8,
+		PushInt, 1, 0, 10,
+		PushInt, 1, 0, 8,
 		Call, 0, 13, 2,
 		Halt,
 		NoOp,
@@ -1067,10 +1198,8 @@ func TestVM_Exec_StoreLoc(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(callstackTos.variables), 2)
 
-	x := callstackTos.variables[0]
-	y := callstackTos.variables[1]
-	assert.Equal(t, x.Cmp(big.NewInt(4)), 0)
-	assert.Equal(t, y.Cmp(big.NewInt(5)), 0)
+	assertBytes(t, callstackTos.variables[0], 0, 4)
+	assertBytes(t, callstackTos.variables[1], 0, 5)
 }
 
 func TestVM_Exec_LoadSt(t *testing.T) {
