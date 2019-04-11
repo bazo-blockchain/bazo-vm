@@ -374,8 +374,8 @@ func (vm *VM) Exec(trace bool) bool {
 			// The Exp OpCode is a special case in terms of gas calculation. The calculation of the gasCost is done
 			// during execution. An Exp function such as 2 ** n can be split up into n multiplications of the first
 			// factor -> 2 * 2 * 2 ... (n times). Therefore the gasCosts need to be as high as if the user performed
-			// n multiplications. As the user already payed the opcode price, we reduce the gasCost by this price.
-			gasCost := opCode.gasPrice * uint64(right.Int64()) - opCode.gasPrice
+			// n multiplications. As the user already paid the opcode price, we reduce the gasCost by this price.
+			gasCost := opCode.gasPrice*uint64(right.Int64()) - opCode.gasPrice
 
 			if int64(vm.fee-gasCost) < 0 {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": Out of gas"))
