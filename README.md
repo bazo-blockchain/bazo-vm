@@ -22,8 +22,9 @@ Blockchain with smart contracts.
 **Documents**
 * [Bazo VM - Bachelor Thesis 2018.pdf](https://github.com/bazo-blockchain/bazo-vm/releases/download/v1.0.0/BachelorThesis-VM-HSR-2018.pdf) 
 
-
 ## Development
+
+Run `./scripts/set-hooks.sh` to setup git hooks.
 
 ###  Dependency Management
 
@@ -32,4 +33,21 @@ Packages are managed by [Go Modules](https://github.com/golang/go/wiki/Modules).
 Set the environment variable `GO111MODULE=on` and run `go mod vendor` 
 to install all the dependencies into the local vendor directory.
 
+### Run Virtual Machine from Source
+
+TODO
+
+### Run Unit Tests
+
+    go test ./... 
+
+It will run all tests in the current directory and all of its subdirectories.
+
+To see the test coverage, run `./scripts/test.sh` and then open the **coverage.html** file.
+
+### Run Lints
+
+    ./scripts/lint.sh
+    
+It will run golint on all packages except the vendor directory.
 
