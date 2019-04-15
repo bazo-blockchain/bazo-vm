@@ -3,12 +3,11 @@ package vm
 import (
 	"bytes"
 	"encoding/binary"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/big"
 	"testing"
 
 	"fmt"
-
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 func TestVM_NewTestVM(t *testing.T) {

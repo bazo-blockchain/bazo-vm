@@ -8,8 +8,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/bazo-blockchain/bazo-miner/protocol"
-
 	"golang.org/x/crypto/sha3"
 )
 
