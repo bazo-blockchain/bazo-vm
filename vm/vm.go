@@ -110,7 +110,7 @@ func (vm *VM) trace() {
 		}
 	}
 
-	reversedStack := make([]protocol.ByteArray, stack.GetLength())
+	reversedStack := make([][]byte, stack.GetLength())
 	maxIndex := len(stack.Stack) - 1
 	for i := maxIndex; i >= 0; i-- {
 		reversedStack[maxIndex-i] = stack.Stack[i]
