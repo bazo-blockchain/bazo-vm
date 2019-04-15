@@ -1212,7 +1212,7 @@ func TestVM_Exec_LoadSt(t *testing.T) {
 
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
-	mc.ContractVariables = [][]byte{[]byte("Hi There!!"), []byte{26}, []byte{0}}
+	mc.ContractVariables = [][]byte{[]byte("Hi There!!"), {26}, {0}}
 	vm.context = mc
 
 	vm.Exec(false)
@@ -2658,6 +2658,24 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	if ByteArrayToInt(actual[1:]) != expected {
 		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
 	}
+}
+
+func TestPeekEvalStack(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 2, // [128]
+		PushBool, 0,
+		Push, 4, 1, 2, 3, 4,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	evalStack := vm.PeekEvalStack()
+	assert.Equal(t, len(evalStack), 3)
+	assertBytes(t, evalStack[0], 0, 2)
+	assertBytes(t, evalStack[1], 0)
+	assertBytes(t, evalStack[2], 1, 2, 3, 4)
 }
 
 // Helper functions

@@ -1,5 +1,3 @@
-github.com/bazo-blockchain/bazo-miner v0.0.0-20190202131416-70aeba0cc925 h1:nSe2r9vdKDML8Vu6aV3T6zMkhmoOg/irdEgDSfY9PQ0=
-github.com/bazo-blockchain/bazo-miner v0.0.0-20190202131416-70aeba0cc925/go.mod h1:mss6+SSsouoT/kKCIiQSONh972tLbCVORAxq/PzvCa8=
 github.com/bazo-blockchain/bazo-miner v0.0.0-20190411120411-4ccce5c0a1c0 h1:LRJG4pHoqA1DxDamf/cbz0Rrvw9M3tkhp2MQ5zGJi6o=
 github.com/bazo-blockchain/bazo-miner v0.0.0-20190411120411-4ccce5c0a1c0/go.mod h1:xnPO3uP6OVnQDBxm+3R8VWQRFAVBUO4eqFNcok0/vCk=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
