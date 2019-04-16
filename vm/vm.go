@@ -1293,8 +1293,21 @@ func (vm *VM) PopUnsignedBigInt(opCode OpCode) (bigInt big.Int, err error) {
 	return result, err
 }
 
+// PeekResult returns the element on top of the stack
 func (vm *VM) PeekResult() (element []byte, err error) {
 	return vm.evaluationStack.PeekBytes()
+}
+
+// PeekEvalStack returns a copy of the complete evaluation stack
+func (vm *VM) PeekEvalStack() [][]byte {
+	evalStack := vm.evaluationStack.Stack
+	copiedStack := make([][]byte, len(evalStack))
+
+	for i := range evalStack {
+		copiedStack[i] = make([]byte, len(evalStack[i]))
+		copy(copiedStack[i], evalStack[i])
+	}
+	return copiedStack
 }
 
 func (vm *VM) GetErrorMsg() string {
