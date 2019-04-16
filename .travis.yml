@@ -6,8 +6,15 @@ go:
 env:
   - GO111MODULE=on
 
+addons:
+  sonarcloud:
+    organization: "bazo-blockchain"
+
 script:
   - go test -v ./... -coverprofile=coverage.out -coverpkg=./...
+  - sonar-scanner
 
 after_success:
   - go build
+
+
