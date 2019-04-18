@@ -2664,7 +2664,7 @@ func TestMultipleReturnValues(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 1,
 		PushInt, 1, 0, 2,
-		Call, 0, 14, 2, 1,
+		Call, 0, 14, 2, 2,
 		Halt,
 		NoOp,
 		NoOp,
@@ -2681,7 +2681,6 @@ func TestMultipleReturnValues(t *testing.T) {
 
 	firstExpected := 2
 	secondExpected := 1
-	vm.evaluationStack.Pop()
 	firstActual, _ := vm.evaluationStack.Pop()
 	secondActual, _ := vm.evaluationStack.Pop()
 
@@ -2703,7 +2702,7 @@ func TestMultipleReturnValuesDifferentTypes(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 1,
 		PushBool, 0,
-		Call, 0, 14, 2, 1,
+		Call, 0, 14, 2, 2,
 		Halt,
 		NoOp,
 		NoOp,
@@ -2720,7 +2719,6 @@ func TestMultipleReturnValuesDifferentTypes(t *testing.T) {
 
 	firstExpected := false
 	secondExpected := 1
-	vm.evaluationStack.Pop()
 	firstActual, _ := vm.evaluationStack.Pop()
 	secondActual, _ := vm.evaluationStack.Pop()
 
