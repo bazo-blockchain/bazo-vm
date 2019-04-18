@@ -2588,85 +2588,85 @@ func TestVm_Exec_Loop(t *testing.T) {
 	}
 }
 
-//func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
-//	code := []byte{
-//		PushInt, 1, 0, 4, // Base 4
-//		PushInt, 2, 0, 1, 241, // Modulus 497
-//
-//		// Address 9
-//		// IF modulus equals 0
-//		Dup,
-//		PushInt, 0,
-//		Eq,
-//		JmpTrue, 0, 42, // Adjust address
-//
-//		// Address 16
-//		PushInt, 1, 0, 1, // Counter (c)
-//		PushInt, 0, //i
-//		PushInt, 1, 0, 13, // Exp
-//
-//		// Address 26
-//		//LOOP start: Stack: [[0 13] [0] [0 1] [0 1 241] [0 4]]
-//		Roll, 2,
-//		//Duplicate arguments
-//		Dup, //Stack: [[0 11 75] [0 11 75] [0 13] [0] [0 1] [0 4]]
-//		Roll, 4,
-//		Dup, // STACK Stack: [[04] [0 4] [0 11 75] [0 11 75] [0 13] [0 0] [0 1]]
-//		// PUT in order
-//		Roll, 1, //Stack: [[0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 0] [0 1]]
-//		Roll, 4, //Stack: [[0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 1]]
-//		Roll, 4, //Stack: [[0 13] [0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 1]]
-//		Roll, 3, //Stack: [[0 4] [0 13] [0 0] [0 11 75] [0 4] [0 11 75] [0 1]]
-//		Roll, 4, //Stack: [[0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4] [0 1]]
-//		Roll, 5, //Stack: [[0 1] [0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4]]
-//
-//		// Address 44
-//		// Order: counter, modulus, base, exp, i, modulus, base
-//		Call, 0, 73, 3, 1,
-//		// PUT in order
-//		Roll, 1,
-//		Roll, 1,
-//
-//		// Address 53
-//		// Order: exp, i - counter, modulus, base,
-//		Dup,
-//		Roll, 1,
-//		PushInt, 1, 0, 1,
-//		Add,
-//		Dup,
-//		Roll, 1,
-//		Roll, 1,
-//		Roll, 2,
-//		Lt,
-//		JmpTrue, 0, 26, // Adjust address
-//		// LOOP END
-//		Halt,
-//
-//		// Address 77
-//		// FUNCTION Order: c, modulus, base,
-//		LoadLoc, 2,
-//		LoadLoc, 0,
-//		Mul,
-//		LoadLoc, 1,
-//		Mod,
-//		Ret,
-//	}
-//
-//	vm := NewTestVM([]byte{})
-//	mc := NewMockContext(code)
-//	mc.Fee = 1000
-//	vm.context = mc
-//	vm.Exec(true)
-//
-//	expected := 445
-//	vm.evaluationStack.Pop()
-//	vm.evaluationStack.Pop()
-//	actual, _ := vm.evaluationStack.Pop()
-//
-//	if ByteArrayToInt(actual[1:]) != expected {
-//		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
-//	}
-//}
+func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 4, // Base 4
+		PushInt, 2, 0, 1, 241, // Modulus 497
+
+		// Address 9
+		// IF modulus equals 0
+		Dup,
+		PushInt, 0,
+		Eq,
+		JmpTrue, 0, 42, // Adjust address
+
+		// Address 16
+		PushInt, 1, 0, 1, // Counter (c)
+		PushInt, 0, // i
+		PushInt, 1, 0, 13, // Exp
+
+		// Address 26
+		//LOOP start: Stack: [[0 13] [0] [0 1] [0 1 241] [0 4]]
+		Roll, 2,
+		//Duplicate arguments
+		Dup, //Stack: [[0 11 75] [0 11 75] [0 13] [0] [0 1] [0 4]]
+		Roll, 4,
+		Dup, // STACK Stack: [[04] [0 4] [0 11 75] [0 11 75] [0 13] [0 0] [0 1]]
+		// PUT in order
+		Roll, 1, //Stack: [[0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 0] [0 1]]
+		Roll, 4, //Stack: [[0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 13] [0 1]]
+		Roll, 4, //Stack: [[0 13] [0 0] [0 11 75] [0 4] [0 4] [0 11 75] [0 1]]
+		Roll, 3, //Stack: [[0 4] [0 13] [0 0] [0 11 75] [0 4] [0 11 75] [0 1]]
+		Roll, 4, //Stack: [[0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4] [0 1]]
+		Roll, 5, //Stack: [[0 1] [0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4]]
+
+		// Address 44
+		// Order: counter, modulus, base, exp, i, modulus, base
+		Call, 0, 73, 3, 5,
+		// PUT in order
+		Roll, 1,
+		Roll, 1,
+
+		// Address 53
+		// Order: exp, i - counter, modulus, base,
+		Dup,
+		Roll, 1,
+		PushInt, 1, 0, 1,
+		Add,
+		Dup,
+		Roll, 1,
+		Roll, 1,
+		Roll, 2,
+		Lt,
+		JmpTrue, 0, 26, // Adjust address
+		// LOOP END
+		Halt,
+
+		// Address 73
+		// FUNCTION Order: c, modulus, base,
+		LoadLoc, 2,
+		LoadLoc, 0,
+		Mul,
+		LoadLoc, 1,
+		Mod,
+		Ret,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 1000
+	vm.context = mc
+	vm.Exec(true)
+
+	expected := 445
+	vm.evaluationStack.Pop()
+	vm.evaluationStack.Pop()
+	actual, _ := vm.evaluationStack.Pop()
+
+	if ByteArrayToInt(actual[1:]) != expected {
+		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
+	}
+}
 
 func TestMultipleReturnValues(t *testing.T) {
 	code := []byte{
