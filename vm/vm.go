@@ -592,14 +592,14 @@ func (vm *VM) Exec(trace bool) bool {
 			returnAddress.SetBytes(returnAddressBytes)
 
 			if int(returnAddress.Int64()) == 0 || int(returnAddress.Int64()) > len(vm.code) {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": ReturnAddress out of bounds"))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": ReturnAddress out of bounds"))
 				return false
 			}
 
 			nrOfReturnTypes := int(nrOfReturnTypesByte)
 
 			if nrOfReturnTypes < 0 {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": Number of return types cannot be negative"))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": Number of return types cannot be negative"))
 				return false
 			}
 
@@ -612,7 +612,7 @@ func (vm *VM) Exec(trace bool) bool {
 			for i := int(argsToLoad) - 1; i >= 0; i-- {
 				frame.variables[i], err = vm.PopBytes(opCode)
 				if err != nil {
-					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+					_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
 				}
 			}
@@ -635,14 +635,14 @@ func (vm *VM) Exec(trace bool) bool {
 				returnAddress.SetBytes(returnAddressBytes)
 
 				if int(returnAddress.Int64()) == 0 || int(returnAddress.Int64()) > len(vm.code) {
-					vm.evaluationStack.Push([]byte(opCode.Name + ": ReturnAddress out of bounds"))
+					_ = vm.evaluationStack.Push([]byte(opCode.Name + ": ReturnAddress out of bounds"))
 					return false
 				}
 
 				nrOfReturnTypes := int(nrOfReturnTypesByte)
 
 				if nrOfReturnTypes < 0 {
-					vm.evaluationStack.Push([]byte(opCode.Name + ": Number of return types cannot be negative"))
+					_ = vm.evaluationStack.Push([]byte(opCode.Name + ": Number of return types cannot be negative"))
 					return false
 				}
 
@@ -655,7 +655,7 @@ func (vm *VM) Exec(trace bool) bool {
 				for i := int(argsToLoad) - 1; i >= 0; i-- {
 					frame.variables[i], err = vm.PopBytes(opCode)
 					if err != nil {
-						vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+						_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 						return false
 					}
 				}
