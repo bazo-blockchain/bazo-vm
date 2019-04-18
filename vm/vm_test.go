@@ -2660,6 +2660,84 @@ func TestVm_Exec_Loop(t *testing.T) {
 //	}
 //}
 
+func TestMultipleReturnValues(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 1,
+		PushInt, 1, 0, 2,
+		Call, 0, 14, 2, 1,
+		Halt,
+		NoOp,
+		NoOp,
+		LoadLoc, 0, // Begin of called function at address 14
+		LoadLoc, 1,
+		Ret,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 1000
+	vm.context = mc
+	vm.Exec(false)
+
+	firstExpected := 2
+	secondExpected := 1
+	vm.evaluationStack.Pop()
+	firstActual, _ := vm.evaluationStack.Pop()
+	secondActual, _ := vm.evaluationStack.Pop()
+
+	if firstActual == nil || secondActual == nil {
+		t.Error("Function did not return enough values.")
+	}
+
+	if ByteArrayToInt(firstActual[1:]) != firstExpected || ByteArrayToInt(secondActual[1:]) != secondExpected {
+		t.Errorf("Actual return values '%v' and '%v' do not match with expected values '%v' and '%v'",
+			ByteArrayToInt(firstActual[1:]),
+			ByteArrayToInt(secondActual[1:]),
+			firstExpected,
+			secondExpected,
+		)
+	}
+}
+
+func TestMultipleReturnValuesDifferentTypes(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 1,
+		PushBool, 0,
+		Call, 0, 14, 2, 1,
+		Halt,
+		NoOp,
+		NoOp,
+		LoadLoc, 0, // Begin of called function at address 14
+		LoadLoc, 1,
+		Ret,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 1000
+	vm.context = mc
+	vm.Exec(false)
+
+	firstExpected := false
+	secondExpected := 1
+	vm.evaluationStack.Pop()
+	firstActual, _ := vm.evaluationStack.Pop()
+	secondActual, _ := vm.evaluationStack.Pop()
+
+	if firstActual == nil || secondActual == nil {
+		t.Error("Function did not return enough values.")
+	}
+
+	if ByteArrayToBool(firstActual) != firstExpected || ByteArrayToInt(secondActual[1:]) != secondExpected {
+		t.Errorf("Actual return values '%v' and '%v' do not match with expected values '%v' and '%v'",
+			ByteArrayToInt(firstActual[1:]),
+			ByteArrayToInt(secondActual[1:]),
+			firstExpected,
+			secondExpected,
+		)
+	}
+}
+
 func TestPeekEvalStack(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 2, // [128]
