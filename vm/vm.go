@@ -679,12 +679,12 @@ func (vm *VM) Exec(trace bool) bool {
 			callstackTos, err := vm.callStack.Peek()
 
 			if !vm.checkErrors(opCode.Name, err) {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			if vm.evaluationStack.GetLength() != callstackTos.nrOfReturnTypes {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": Number of returned elements does not match."))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": Number of returned elements does not match."))
 				return false
 			}
 
