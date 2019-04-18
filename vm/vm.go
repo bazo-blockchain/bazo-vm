@@ -582,8 +582,9 @@ func (vm *VM) Exec(trace bool) bool {
 		case Call:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
 			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
+			nrOfReturnTypesByte, errArg3 := vm.fetch(opCode.Name)
 
-			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errArg3) {
 				return false
 			}
 
@@ -595,7 +596,18 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			frame := &Frame{returnAddress: vm.pc, variables: make(map[int][]byte)}
+			nrOfReturnTypes := int(nrOfReturnTypesByte)
+
+			if nrOfReturnTypes < 0 {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Number of return types cannot be negative"))
+				return false
+			}
+
+			frame := &Frame{
+				returnAddress:   vm.pc,
+				variables:       make(map[int][]byte),
+				nrOfReturnTypes: nrOfReturnTypes,
+			}
 
 			for i := int(argsToLoad) - 1; i >= 0; i-- {
 				frame.variables[i], err = vm.PopBytes(opCode)
@@ -611,9 +623,10 @@ func (vm *VM) Exec(trace bool) bool {
 		case CallTrue:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
 			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
+			nrOfReturnTypesByte, errArg3 := vm.fetch(opCode.Name)
 			right, errStack := vm.PopBytes(opCode)
 
-			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errStack) {
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errArg3, errStack) {
 				return false
 			}
 
@@ -626,7 +639,18 @@ func (vm *VM) Exec(trace bool) bool {
 					return false
 				}
 
-				frame := &Frame{returnAddress: vm.pc, variables: make(map[int][]byte)}
+				nrOfReturnTypes := int(nrOfReturnTypesByte)
+
+				if nrOfReturnTypes < 0 {
+					vm.evaluationStack.Push([]byte(opCode.Name + ": Number of return types cannot be negative"))
+					return false
+				}
+
+				frame := &Frame{
+					returnAddress:   vm.pc,
+					variables:       make(map[int][]byte),
+					nrOfReturnTypes: nrOfReturnTypes,
+				}
 
 				for i := int(argsToLoad) - 1; i >= 0; i-- {
 					frame.variables[i], err = vm.PopBytes(opCode)
@@ -655,6 +679,12 @@ func (vm *VM) Exec(trace bool) bool {
 			callstackTos, err := vm.callStack.Peek()
 
 			if !vm.checkErrors(opCode.Name, err) {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			if vm.evaluationStack.GetLength() != callstackTos.nrOfReturnTypes {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": Number of returned elements does not match."))
 				return false
 			}
 

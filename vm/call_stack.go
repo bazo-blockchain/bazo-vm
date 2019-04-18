@@ -5,8 +5,9 @@ import (
 )
 
 type Frame struct {
-	variables     map[int][]byte
-	returnAddress int
+	variables       map[int][]byte
+	nrOfReturnTypes int
+	returnAddress   int
 }
 
 type CallStack struct {
