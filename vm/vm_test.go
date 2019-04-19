@@ -1031,7 +1031,7 @@ func TestVM_Exec_Call(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 10,
 		PushInt, 1, 0, 8,
-		Call, 0, 13, 2,
+		Call, 0, 14, 2, 1,
 		Halt,
 		NoOp,
 		NoOp,
@@ -1069,7 +1069,7 @@ func TestVM_Exec_Callif_true(t *testing.T) {
 		PushInt, 1, 0, 10,
 		PushInt, 1, 0, 10,
 		Eq,
-		CallTrue, 0, 24, 2,
+		CallTrue, 0, 25, 2, 1,
 		Halt,
 		NoOp,
 		NoOp,
@@ -1107,7 +1107,7 @@ func TestVM_Exec_Callif_false(t *testing.T) {
 		PushInt, 1, 0, 10,
 		PushInt, 1, 0, 2,
 		Eq,
-		CallTrue, 0, 25, 2,
+		CallTrue, 0, 26, 2, 1,
 		Halt,
 		NoOp,
 		NoOp,
@@ -2590,22 +2590,26 @@ func TestVm_Exec_Loop(t *testing.T) {
 
 func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	code := []byte{
-		PushInt, 1, 0, 4, // Base
-		PushInt, 2, 0, 1, 241, // Modulus
+		PushInt, 1, 0, 4, // Base 4
+		PushInt, 2, 0, 1, 241, // Modulus 497
+
+		// Address 9
 		// IF modulus equals 0
 		Dup,
-		PushInt, 1, 0, 0,
+		PushInt, 0,
 		Eq,
-		JmpTrue, 0, 46, // Adjust address
+		JmpTrue, 0, 42, // Adjust address
 
+		// Address 16
 		PushInt, 1, 0, 1, // Counter (c)
-		PushInt, 1, 0, 0, //i
+		PushInt, 0, // i
 		PushInt, 1, 0, 13, // Exp
 
-		//LOOP start
-		//Duplicate arguments
+		// Address 26
+		//LOOP start: Stack: [[0 13] [0] [0 1] [0 1 241] [0 4]]
 		Roll, 2,
-		Dup, //Stack: [[0 11 75] [0 11 75] [0 13] [0 0] [0 1] [0 4]]
+		//Duplicate arguments
+		Dup, //Stack: [[0 11 75] [0 11 75] [0 13] [0] [0 1] [0 4]]
 		Roll, 4,
 		Dup, // STACK Stack: [[04] [0 4] [0 11 75] [0 11 75] [0 13] [0 0] [0 1]]
 		// PUT in order
@@ -2615,12 +2619,15 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 		Roll, 3, //Stack: [[0 4] [0 13] [0 0] [0 11 75] [0 4] [0 11 75] [0 1]]
 		Roll, 4, //Stack: [[0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4] [0 1]]
 		Roll, 5, //Stack: [[0 1] [0 11 75] [0 4] [0 13] [0 0] [0 11 75] [0 4]]
+
+		// Address 44
 		// Order: counter, modulus, base, exp, i, modulus, base
-		Call, 0, 76, 3,
+		Call, 0, 73, 3, 5,
 		// PUT in order
 		Roll, 1,
 		Roll, 1,
 
+		// Address 53
 		// Order: exp, i - counter, modulus, base,
 		Dup,
 		Roll, 1,
@@ -2631,10 +2638,11 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 		Roll, 1,
 		Roll, 2,
 		Lt,
-		JmpTrue, 0, 30, // Adjust address
+		JmpTrue, 0, 26, // Adjust address
 		// LOOP END
 		Halt,
 
+		// Address 73
 		// FUNCTION Order: c, modulus, base,
 		LoadLoc, 2,
 		LoadLoc, 0,
@@ -2648,7 +2656,7 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	mc := NewMockContext(code)
 	mc.Fee = 1000
 	vm.context = mc
-	vm.Exec(false)
+	vm.Exec(true)
 
 	expected := 445
 	vm.evaluationStack.Pop()
@@ -2657,6 +2665,82 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 
 	if ByteArrayToInt(actual[1:]) != expected {
 		t.Errorf("Expected actual result to be '%v' but was '%v'", expected, actual)
+	}
+}
+
+func TestMultipleReturnValues(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 1,
+		PushInt, 1, 0, 2,
+		Call, 0, 14, 2, 2,
+		Halt,
+		NoOp,
+		NoOp,
+		LoadLoc, 0, // Begin of called function at address 14
+		LoadLoc, 1,
+		Ret,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 1000
+	vm.context = mc
+	vm.Exec(false)
+
+	firstExpected := 2
+	secondExpected := 1
+	firstActual, _ := vm.evaluationStack.Pop()
+	secondActual, _ := vm.evaluationStack.Pop()
+
+	if firstActual == nil || secondActual == nil {
+		t.Error("Function did not return enough values.")
+	}
+
+	if ByteArrayToInt(firstActual[1:]) != firstExpected || ByteArrayToInt(secondActual[1:]) != secondExpected {
+		t.Errorf("Actual return values '%v' and '%v' do not match with expected values '%v' and '%v'",
+			ByteArrayToInt(firstActual[1:]),
+			ByteArrayToInt(secondActual[1:]),
+			firstExpected,
+			secondExpected,
+		)
+	}
+}
+
+func TestMultipleReturnValuesDifferentTypes(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 1,
+		PushBool, 0,
+		Call, 0, 14, 2, 2,
+		Halt,
+		NoOp,
+		NoOp,
+		LoadLoc, 0, // Begin of called function at address 14
+		LoadLoc, 1,
+		Ret,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.Fee = 1000
+	vm.context = mc
+	vm.Exec(false)
+
+	firstExpected := false
+	secondExpected := 1
+	firstActual, _ := vm.evaluationStack.Pop()
+	secondActual, _ := vm.evaluationStack.Pop()
+
+	if firstActual == nil || secondActual == nil {
+		t.Error("Function did not return enough values.")
+	}
+
+	if ByteArrayToBool(firstActual) != firstExpected || ByteArrayToInt(secondActual[1:]) != secondExpected {
+		t.Errorf("Actual return values '%v' and '%v' do not match with expected values '%v' and '%v'",
+			ByteArrayToInt(firstActual[1:]),
+			ByteArrayToInt(secondActual[1:]),
+			firstExpected,
+			secondExpected,
+		)
 	}
 }
 

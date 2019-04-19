@@ -582,8 +582,9 @@ func (vm *VM) Exec(trace bool) bool {
 		case Call:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
 			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
+			nrOfReturnTypesByte, errArg3 := vm.fetch(opCode.Name)
 
-			if !vm.checkErrors(opCode.Name, errArg1, errArg2) {
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errArg3) {
 				return false
 			}
 
@@ -591,16 +592,27 @@ func (vm *VM) Exec(trace bool) bool {
 			returnAddress.SetBytes(returnAddressBytes)
 
 			if int(returnAddress.Int64()) == 0 || int(returnAddress.Int64()) > len(vm.code) {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": ReturnAddress out of bounds"))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": ReturnAddress out of bounds"))
 				return false
 			}
 
-			frame := &Frame{returnAddress: vm.pc, variables: make(map[int][]byte)}
+			nrOfReturnTypes := int(nrOfReturnTypesByte)
+
+			if nrOfReturnTypes < 0 {
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": Number of return types cannot be negative"))
+				return false
+			}
+
+			frame := &Frame{
+				returnAddress:   vm.pc,
+				variables:       make(map[int][]byte),
+				nrOfReturnTypes: nrOfReturnTypes,
+			}
 
 			for i := int(argsToLoad) - 1; i >= 0; i-- {
 				frame.variables[i], err = vm.PopBytes(opCode)
 				if err != nil {
-					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+					_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
 				}
 			}
@@ -611,9 +623,10 @@ func (vm *VM) Exec(trace bool) bool {
 		case CallTrue:
 			returnAddressBytes, errArg1 := vm.fetchMany(opCode.Name, 2) // Shows where to jump after executing
 			argsToLoad, errArg2 := vm.fetch(opCode.Name)                // Shows how many elements have to be popped from evaluationStack
+			nrOfReturnTypesByte, errArg3 := vm.fetch(opCode.Name)
 			right, errStack := vm.PopBytes(opCode)
 
-			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errStack) {
+			if !vm.checkErrors(opCode.Name, errArg1, errArg2, errArg3, errStack) {
 				return false
 			}
 
@@ -622,16 +635,27 @@ func (vm *VM) Exec(trace bool) bool {
 				returnAddress.SetBytes(returnAddressBytes)
 
 				if int(returnAddress.Int64()) == 0 || int(returnAddress.Int64()) > len(vm.code) {
-					vm.evaluationStack.Push([]byte(opCode.Name + ": ReturnAddress out of bounds"))
+					_ = vm.evaluationStack.Push([]byte(opCode.Name + ": ReturnAddress out of bounds"))
 					return false
 				}
 
-				frame := &Frame{returnAddress: vm.pc, variables: make(map[int][]byte)}
+				nrOfReturnTypes := int(nrOfReturnTypesByte)
+
+				if nrOfReturnTypes < 0 {
+					_ = vm.evaluationStack.Push([]byte(opCode.Name + ": Number of return types cannot be negative"))
+					return false
+				}
+
+				frame := &Frame{
+					returnAddress:   vm.pc,
+					variables:       make(map[int][]byte),
+					nrOfReturnTypes: nrOfReturnTypes,
+				}
 
 				for i := int(argsToLoad) - 1; i >= 0; i-- {
 					frame.variables[i], err = vm.PopBytes(opCode)
 					if err != nil {
-						vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+						_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 						return false
 					}
 				}
@@ -654,7 +678,13 @@ func (vm *VM) Exec(trace bool) bool {
 		case Ret:
 			nrOfReturnValues, err1 := vm.fetch(opCode.Name)
 
-			if !vm.checkErrors(opCode.Name, err1) {
+			if !vm.checkErrors(opCode.Name, err) {
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			if vm.evaluationStack.GetLength() != callstackTos.nrOfReturnTypes {
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": Number of returned elements does not match."))
 				return false
 			}
 
