@@ -676,7 +676,7 @@ func (vm *VM) Exec(trace bool) bool {
 			//TODO: Invoke new transaction with function hash and arguments, waiting for integration in bazo blockchain to finish
 
 		case Ret:
-			nrOfReturnValues, err1 := vm.fetch(opCode.Name)
+			callstackTos, err := vm.callStack.Peek()
 
 			if !vm.checkErrors(opCode.Name, err) {
 				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -688,24 +688,8 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			var returnAddress int
-
-			// Remove n return values from the callstack
-			for i := 0; i < int(nrOfReturnValues); i++ {
-				callstackTos, err2 := vm.callStack.Peek()
-
-				if !vm.checkErrors(opCode.Name, err2) {
-					return false
-				}
-				vm.callStack.Pop()
-
-				// Store the returnAddress of the return value at TOS
-				if i == 0 {
-					returnAddress = callstackTos.returnAddress
-				}
-			}
-
-			vm.pc = returnAddress
+			vm.callStack.Pop()
+			vm.pc = callstackTos.returnAddress
 
 		case Size:
 			element, err := vm.PopBytes(opCode)
