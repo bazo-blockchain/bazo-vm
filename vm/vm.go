@@ -16,6 +16,7 @@ type Context interface {
 	GetContract() []byte
 	GetContractVariable(index int) ([]byte, error)
 	SetContractVariable(index int, value []byte) error
+	PersistChanges()
 	GetAddress() [64]byte
 	GetIssuer() [32]byte
 	GetBalance() uint64
@@ -714,6 +715,8 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			err = vm.context.SetContractVariable(int(index), value)
+			// SetContractVariable only creates a new change but does not apply it. So we must persist it manually.
+			vm.context.PersistChanges()
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
