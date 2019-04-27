@@ -20,13 +20,27 @@ func newStruct(size uint16) *Struct {
 	return &Struct{array, size}
 }
 
-// LoadField returns the field at the given index
-func (s *Struct) LoadField(index uint16) ([]byte, error) {
+func structFromByteArray(arr []byte) (*Struct, error) {
+	a, err := ArrayFromByteArray(arr)
+	if err != nil {
+		return nil, err
+	}
+
+	size, sizeErr := a.getSize()
+	if sizeErr != nil {
+		return nil, err
+	}
+
+	return &Struct{a, size}, nil
+}
+
+// loadField returns the field at the given index
+func (s *Struct) loadField(index uint16) ([]byte, error) {
 	return s.fields.At(index)
 }
 
-// StoreField sets the element on the given index
-func (s *Struct) StoreField(index uint16, element []byte) error {
+// storeField sets the element on the given index
+func (s *Struct) storeField(index uint16, element []byte) error {
 	if index >= s.size {
 		return errors.New("index out of bounds")
 	}

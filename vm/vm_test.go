@@ -1966,6 +1966,24 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 
 }
 
+func TestVM_Exec_NewStr(t *testing.T) {
+	code := []byte{
+		Push, 2, 2, 0, // size=2
+		NewStr,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	arr, err := vm.evaluationStack.Pop()
+	assert.NilError(t, err)
+
+	s, sErr := structFromByteArray(arr)
+	assert.NilError(t, sErr)
+	assert.Equal(t, s.size, uint16(2))
+}
+
 func TestVM_Exec_NonValidOpCode(t *testing.T) {
 	code := []byte{
 		89,

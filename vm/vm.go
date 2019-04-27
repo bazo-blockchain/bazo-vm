@@ -1179,6 +1179,19 @@ func (vm *VM) Exec(trace bool) bool {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
+		case NewStr:
+			sizeBytes, err := vm.PopBytes(opCode)
+			if err != nil {
+				vm.pushError(opCode.Name, err)
+			}
+
+			size, sizeErr := ByteArrayToUI16(sizeBytes)
+			if sizeErr != nil {
+				vm.pushError(opCode.Name, err)
+			}
+
+			s := newStruct(size)
+			_ = vm.evaluationStack.Push(s.fields)
 
 		case SHA3:
 			right, err := vm.PopBytes(opCode)
@@ -1265,6 +1278,10 @@ func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
 		}
 	}
 	return true
+}
+
+func (vm *VM) pushError(errorLocation string, err error) {
+	_ = vm.evaluationStack.Push([]byte(errorLocation + ": " + err.Error()))
 }
 
 func (vm *VM) PopBytes(opCode OpCode) (elements []byte, err error) {
