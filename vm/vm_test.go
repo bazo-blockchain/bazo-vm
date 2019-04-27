@@ -1830,16 +1830,15 @@ func TestVM_Exec_ArrAppend(t *testing.T) {
 
 func TestVM_Exec_ArrInsert(t *testing.T) {
 	code := []byte{
-		Push, 2, 0x00, 0x00,
-		Push, 2, 0x00, 0x00,
+		Push, 2, 0x00, 0x02, // new value [0,2]
+		Push, 2, 0x00, 0x00, // index 0
 
-		Push, 2, 0xFF, 0x00,
-
-		Push, 2, 0xFF, 0x00,
+		Push, 1, 0xFE, // value [254] at index 1
+		Push, 1, 0xFF, // value [255] at index 0
 		NewArr,
 		ArrAppend,
 		ArrAppend,
-		ArrInsert,
+		ArrInsert, // Replace [255] with the new value [0,2]
 		Halt,
 	}
 
@@ -1863,7 +1862,7 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 		t.Errorf("invalid element appended, Expected '[%# x]' but was '[%# x]'", expectedSize, actual[1:2])
 	}
 
-	expectedValue := []byte{0x00, 0x00}
+	expectedValue := []byte{0x00, 0x02}
 	if !bytes.Equal(expectedValue, actual[5:7]) {
 		t.Errorf("invalid element appended, Expected '[%# x' but was '[%# x]'", expectedValue, actual[5:7])
 	}
