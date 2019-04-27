@@ -1191,7 +1191,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			s := newStruct(size)
-			_ = vm.evaluationStack.Push(s.fields)
+			_ = vm.evaluationStack.Push(s)
 
 		case SHA3:
 			right, err := vm.PopBytes(opCode)

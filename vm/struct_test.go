@@ -7,18 +7,19 @@ import (
 
 func TestStruct_NewStruct(t *testing.T) {
 	s := newStruct(2)
-	size, err := s.fields.getSize()
+	array := s.toArray()
+	size, err := array.getSize()
 
 	assert.NilError(t, err)
 	assert.Equal(t, size, uint16(2))
 
 	// Initial field value at index 0
-	elementAt, atErr := s.fields.At(0)
+	elementAt, atErr := array.At(0)
 	assert.NilError(t, atErr)
 	assertBytes(t, elementAt, 0)
 
 	// Initial field value at index 1
-	elementAt, atErr = s.fields.At(1)
+	elementAt, atErr = array.At(1)
 	assert.NilError(t, atErr)
 	assertBytes(t, elementAt, 0)
 }

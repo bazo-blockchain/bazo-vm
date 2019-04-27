@@ -1976,12 +1976,17 @@ func TestVM_Exec_NewStr(t *testing.T) {
 	vm, isSuccess := execCode(code)
 	assert.Assert(t, isSuccess)
 
-	arr, err := vm.evaluationStack.Pop()
+	arrBytes, err := vm.evaluationStack.Pop()
 	assert.NilError(t, err)
 
-	s, sErr := structFromByteArray(arr)
-	assert.NilError(t, sErr)
-	assert.Equal(t, s.size, uint16(2))
+	s, structErr := structFromByteArray(arrBytes)
+	assert.NilError(t, structErr)
+	assert.Assert(t, s != nil)
+
+	arr := s.toArray()
+	size, sizeErr := arr.getSize()
+	assert.NilError(t, sizeErr)
+	assert.Equal(t, size, uint16(2))
 }
 
 func TestVM_Exec_NonValidOpCode(t *testing.T) {
