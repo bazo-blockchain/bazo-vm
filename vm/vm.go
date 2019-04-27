@@ -1180,18 +1180,47 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 		case NewStr:
-			sizeBytes, err := vm.PopBytes(opCode)
+			sizeBytes, err := vm.fetchMany(opCode.Name, 2)
 			if err != nil {
-				vm.pushError(opCode.Name, err)
+				vm.pushError(opCode, err)
+				return false
 			}
 
-			size, sizeErr := ByteArrayToUI16(sizeBytes)
-			if sizeErr != nil {
-				vm.pushError(opCode.Name, err)
+			size, err := ByteArrayToUI16(sizeBytes)
+			if err != nil {
+				vm.pushError(opCode, err)
+				return false
 			}
 
-			s := newStruct(size)
-			_ = vm.evaluationStack.Push(s)
+			str := newStruct(size)
+			_ = vm.evaluationStack.Push(str)
+
+		case StoreFld:
+			indexBytes, indexErr := vm.fetchMany(opCode.Name, 2)
+			element, elementErr := vm.PopBytes(opCode)
+			structBytes, structErr := vm.PopBytes(opCode)
+
+			if !vm.checkErrors(opCode.Name, structErr, indexErr, elementErr) {
+				return false
+			}
+
+			if len(indexBytes) > 2 {
+				vm.pushError(opCode, errors.New("size should be 2 bytes"))
+				return false
+			}
+
+			str, structErr := structFromByteArray(structBytes)
+			index, indexErr := ByteArrayToUI16(indexBytes)
+			if !vm.checkErrors(opCode.Name, structErr, indexErr) {
+				return false
+			}
+
+			err := str.storeField(index, element)
+			if err != nil {
+				vm.pushError(opCode, err)
+				return false
+			}
+			_ = vm.evaluationStack.Push(str)
 
 		case SHA3:
 			right, err := vm.PopBytes(opCode)
@@ -1280,8 +1309,8 @@ func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
 	return true
 }
 
-func (vm *VM) pushError(errorLocation string, err error) {
-	_ = vm.evaluationStack.Push([]byte(errorLocation + ": " + err.Error()))
+func (vm *VM) pushError(opCode OpCode, err error) {
+	_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 }
 
 func (vm *VM) PopBytes(opCode OpCode) (elements []byte, err error) {

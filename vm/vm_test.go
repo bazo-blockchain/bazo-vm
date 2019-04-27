@@ -1968,8 +1968,7 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 
 func TestVM_Exec_NewStr(t *testing.T) {
 	code := []byte{
-		Push, 2, 2, 0, // size=2
-		NewStr,
+		NewStr, 2, 0, // size=2
 		Halt,
 	}
 
@@ -1979,14 +1978,38 @@ func TestVM_Exec_NewStr(t *testing.T) {
 	arrBytes, err := vm.evaluationStack.Pop()
 	assert.NilError(t, err)
 
-	s, structErr := structFromByteArray(arrBytes)
+	str, structErr := structFromByteArray(arrBytes)
 	assert.NilError(t, structErr)
-	assert.Assert(t, s != nil)
+	assert.Assert(t, str != nil)
 
-	arr := s.toArray()
+	arr := str.toArray()
 	size, sizeErr := arr.getSize()
 	assert.NilError(t, sizeErr)
 	assert.Equal(t, size, uint16(2))
+}
+
+func TestVM_Exec_StoreFld(t *testing.T) {
+	code := []byte{
+		NewStr, 1, 0,
+		PushInt, 1, 0, 4,
+		StoreFld, 0, 0, // Store field on index 0
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	structBytes, err := vm.evaluationStack.Pop()
+	assert.NilError(t, err)
+
+	str, err := structFromByteArray(structBytes)
+	assert.NilError(t, err)
+	assert.Assert(t, str != nil)
+
+	arr := str.toArray()
+	element, err := arr.At(0)
+	assert.NilError(t, err)
+	assertBytes(t, element, 0, 4)
 }
 
 func TestVM_Exec_NonValidOpCode(t *testing.T) {
@@ -2787,13 +2810,13 @@ func TestPeekEvalStack(t *testing.T) {
 // Helper functions
 // ----------------
 
-func execCode(code []byte) (VM, bool) {
+func execCode(code []byte) (*VM, bool) {
 	vm := NewTestVM([]byte{})
 	mc := NewMockContext(code)
 	vm.context = mc
 	isSuccess := vm.Exec(false)
 
-	return vm, isSuccess
+	return &vm, isSuccess
 }
 
 func assertBytes(t *testing.T, actual []byte, expected ...byte) {
