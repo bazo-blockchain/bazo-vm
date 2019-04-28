@@ -2012,6 +2012,30 @@ func TestVM_Exec_StoreFld(t *testing.T) {
 	assertBytes(t, element, 0, 4)
 }
 
+func TestVM_Exec_LoadFld(t *testing.T) {
+	code := []byte{
+		NewStr, 2, 0,
+
+		PushInt, 1, 0, 4,
+		StoreFld, 0, 0, // Store field on index 0
+
+		PushInt, 1, 0, 8,
+		StoreFld, 1, 0, // Store field on index 1
+
+		LoadFld, 0, 0, // Load field at index 0
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	assert.Assert(t, len(vm.evaluationStack.Stack) == 1)
+
+	element, err := vm.evaluationStack.Pop()
+	assert.NilError(t, err)
+	assertBytes(t, element, 0, 4)
+}
+
 func TestVM_Exec_NonValidOpCode(t *testing.T) {
 	code := []byte{
 		89,

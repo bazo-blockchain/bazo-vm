@@ -12,6 +12,9 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+// Context is the VM execution context
+// which is composed with data coming from the transaction and the account.
+// Context interface declares functions required to start the execution of the contract.
 type Context interface {
 	GetContract() []byte
 	GetContractVariable(index int) ([]byte, error)
@@ -1193,19 +1196,16 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			str := newStruct(size)
-			_ = vm.evaluationStack.Push(str)
-
+			err = vm.evaluationStack.Push(str)
+			if err != nil {
+				return false
+			}
 		case StoreFld:
 			indexBytes, indexErr := vm.fetchMany(opCode.Name, 2)
 			element, elementErr := vm.PopBytes(opCode)
 			structBytes, structErr := vm.PopBytes(opCode)
 
 			if !vm.checkErrors(opCode.Name, structErr, indexErr, elementErr) {
-				return false
-			}
-
-			if len(indexBytes) > 2 {
-				vm.pushError(opCode, errors.New("size should be 2 bytes"))
 				return false
 			}
 
@@ -1220,8 +1220,33 @@ func (vm *VM) Exec(trace bool) bool {
 				vm.pushError(opCode, err)
 				return false
 			}
-			_ = vm.evaluationStack.Push(str)
+			err = vm.evaluationStack.Push(str)
+			if err != nil {
+				return false
+			}
+		case LoadFld:
+			indexBytes, indexErr := vm.fetchMany(opCode.Name, 2)
+			structBytes, structErr := vm.PopBytes(opCode)
 
+			if !vm.checkErrors(opCode.Name, structErr, indexErr) {
+				return false
+			}
+
+			str, structErr := structFromByteArray(structBytes)
+			index, indexErr := ByteArrayToUI16(indexBytes)
+			if !vm.checkErrors(opCode.Name, structErr, indexErr) {
+				return false
+			}
+
+			element, err := str.loadField(index)
+			if err != nil {
+				vm.pushError(opCode, err)
+				return false
+			}
+			err = vm.evaluationStack.Push(element)
+			if err != nil {
+				return false
+			}
 		case SHA3:
 			right, err := vm.PopBytes(opCode)
 			if err != nil {
