@@ -29,7 +29,7 @@ func TestMap_IncerementSize(t *testing.T) {
 }
 
 func TestMap_DecrementSize(t *testing.T) {
-	a := Array([]byte{0x02, 0x02, 0x00})
+	a := Array([]byte{0x02, 0x00, 0x02})
 
 	s, err := ByteArrayToUI16(a[1:3])
 	if s != 2 || err != nil {

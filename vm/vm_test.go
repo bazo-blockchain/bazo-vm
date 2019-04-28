@@ -1703,11 +1703,11 @@ func TestVM_Exec_MapSetVal(t *testing.T) {
 	}
 
 	expected := []byte{0x01,
-		0x02, 0x00,
-		0x01, 0x00, 0x02,
-		0x02, 0x00, 0x69, 0x69,
-		0x01, 0x00, 0x03,
-		0x02, 0x00, 0x55, 0x55,
+		0x00, 0x02,
+		0x00, 0x01, 0x02,
+		0x00, 0x02, 0x69, 0x69,
+		0x00, 0x01, 0x03,
+		0x00, 0x02, 0x55, 0x55,
 	}
 
 	if !bytes.Equal(actual, expected) {
@@ -1760,11 +1760,11 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 	}
 
 	expected := []byte{0x01,
-		0x02, 0x00,
-		0x01, 0x00, 0x02,
-		0x02, 0x00, 0x69, 0x69,
-		0x01, 0x00, 0x01,
-		0x02, 0x00, 0x48, 0x48,
+		0x00, 0x02,
+		0x00, 0x01, 0x02,
+		0x00, 0x02, 0x69, 0x69,
+		0x00, 0x01, 0x01,
+		0x00, 0x02, 0x48, 0x48,
 	}
 
 	if !bytes.Equal(actual, expected) {
@@ -1857,8 +1857,8 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	expectedSize := []byte{0x02}
-	if !bytes.Equal(expectedSize, actual[1:2]) {
+	expectedSize := []byte{0x00, 0x02}
+	if !bytes.Equal(expectedSize, actual[1:3]) {
 		t.Errorf("invalid element appended, Expected '[%# x]' but was '[%# x]'", expectedSize, actual[1:2])
 	}
 
@@ -1870,7 +1870,7 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 
 func TestVM_Exec_ArrRemove(t *testing.T) {
 	code := []byte{
-		Push, 2, 0x01, 0x00, //Index of element to remove
+		Push, 2, 0x00, 0x01, //Index of element to remove
 		Push, 2, 0xBB, 0x00,
 		Push, 2, 0xAA, 0x00,
 		Push, 2, 0xFF, 0x00,
@@ -1927,7 +1927,7 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 
 func TestVM_Exec_ArrAt(t *testing.T) {
 	code := []byte{
-		Push, 2, 0x02, 0x00, // index for ARRAT
+		Push, 2, 0x00, 0x02, // index for ARRAT
 		Push, 2, 0xBB, 0x00,
 		Push, 2, 0xAA, 0x00,
 		Push, 2, 0xFF, 0x00,
@@ -1968,7 +1968,7 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 
 func TestVM_Exec_NewStr(t *testing.T) {
 	code := []byte{
-		NewStr, 2, 0, // size=2
+		NewStr, 0, 2, // size=2
 		Halt,
 	}
 
@@ -2014,13 +2014,13 @@ func TestVM_Exec_StoreFld(t *testing.T) {
 
 func TestVM_Exec_LoadFld(t *testing.T) {
 	code := []byte{
-		NewStr, 2, 0,
+		NewStr, 0, 2,
 
 		PushInt, 1, 0, 4,
 		StoreFld, 0, 0, // Store field on index 0
 
 		PushInt, 1, 0, 8,
-		StoreFld, 1, 0, // Store field on index 1
+		StoreFld, 0, 1, // Store field on index 1
 
 		LoadFld, 0, 0, // Load field at index 0
 		Halt,
