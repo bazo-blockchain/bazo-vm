@@ -18,7 +18,7 @@ func UInt64ToByteArray(element uint64) []byte {
 
 func UInt16ToByteArray(element uint16) []byte {
 	ba := make([]byte, 2)
-	binary.LittleEndian.PutUint16(ba, uint16(element))
+	binary.BigEndian.PutUint16(ba, uint16(element))
 	return ba
 }
 
@@ -30,7 +30,7 @@ func ByteArrayToUI16(element []byte) (uint16, error) {
 		return 0, errors.New("byte array to uint16 invalid parameters provided")
 	}
 
-	return binary.LittleEndian.Uint16(element), nil
+	return binary.BigEndian.Uint16(element), nil
 }
 
 func StrToBigInt(element string) big.Int {

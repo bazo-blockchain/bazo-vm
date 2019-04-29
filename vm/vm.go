@@ -12,6 +12,9 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+// Context is the VM execution context
+// which is composed with data coming from the transaction and the account.
+// Context interface declares functions required to start the execution of the contract.
 type Context interface {
 	GetContract() []byte
 	GetContractVariable(index int) ([]byte, error)
@@ -1179,7 +1182,71 @@ func (vm *VM) Exec(trace bool) bool {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
+		case NewStr:
+			sizeBytes, err := vm.fetchMany(opCode.Name, 2)
+			if err != nil {
+				vm.pushError(opCode, err)
+				return false
+			}
 
+			size, err := ByteArrayToUI16(sizeBytes)
+			if err != nil {
+				vm.pushError(opCode, err)
+				return false
+			}
+
+			str := newStruct(size)
+			err = vm.evaluationStack.Push(str)
+			if err != nil {
+				return false
+			}
+		case StoreFld:
+			indexBytes, indexErr := vm.fetchMany(opCode.Name, 2)
+			element, elementErr := vm.PopBytes(opCode)
+			structBytes, structErr := vm.PopBytes(opCode)
+
+			if !vm.checkErrors(opCode.Name, structErr, indexErr, elementErr) {
+				return false
+			}
+
+			str, structErr := structFromByteArray(structBytes)
+			index, indexErr := ByteArrayToUI16(indexBytes)
+			if !vm.checkErrors(opCode.Name, structErr, indexErr) {
+				return false
+			}
+
+			err := str.storeField(index, element)
+			if err != nil {
+				vm.pushError(opCode, err)
+				return false
+			}
+			err = vm.evaluationStack.Push(str)
+			if err != nil {
+				return false
+			}
+		case LoadFld:
+			indexBytes, indexErr := vm.fetchMany(opCode.Name, 2)
+			structBytes, structErr := vm.PopBytes(opCode)
+
+			if !vm.checkErrors(opCode.Name, structErr, indexErr) {
+				return false
+			}
+
+			str, structErr := structFromByteArray(structBytes)
+			index, indexErr := ByteArrayToUI16(indexBytes)
+			if !vm.checkErrors(opCode.Name, structErr, indexErr) {
+				return false
+			}
+
+			element, err := str.loadField(index)
+			if err != nil {
+				vm.pushError(opCode, err)
+				return false
+			}
+			err = vm.evaluationStack.Push(element)
+			if err != nil {
+				return false
+			}
 		case SHA3:
 			right, err := vm.PopBytes(opCode)
 			if err != nil {
@@ -1265,6 +1332,10 @@ func (vm *VM) checkErrors(errorLocation string, errors ...error) bool {
 		}
 	}
 	return true
+}
+
+func (vm *VM) pushError(opCode OpCode, err error) {
+	_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 }
 
 func (vm *VM) PopBytes(opCode OpCode) (elements []byte, err error) {

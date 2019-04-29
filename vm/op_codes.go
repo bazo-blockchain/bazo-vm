@@ -55,6 +55,9 @@ const (
 	ArrInsert
 	ArrRemove
 	ArrAt
+	NewStr
+	StoreFld
+	LoadFld
 	SHA3
 	CheckSig
 	ErrHalt
@@ -134,6 +137,9 @@ var OpCodes = []OpCode{
 	{ArrInsert, "arrinsert", 0, nil, 1, 2},
 	{ArrRemove, "arrremove", 0, nil, 1, 2},
 	{ArrAt, "arrat", 0, nil, 1, 2},
+	{NewStr, "newstr", 1, []int{BYTE}, 1, 2},
+	{StoreFld, "storefld", 1, []int{BYTE}, 1, 2},
+	{LoadFld, "loadfld", 1, []int{BYTE}, 1, 2},
 	{SHA3, "sha3", 0, nil, 1, 2},
 	{CheckSig, "checksig", 0, nil, 1, 2},
 	{ErrHalt, "errhalt", 0, nil, 0, 1},
