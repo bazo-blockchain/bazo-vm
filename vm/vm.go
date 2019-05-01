@@ -304,6 +304,18 @@ func (vm *VM) Exec(trace bool) bool {
 					return false
 				}
 			}
+		case Swap:
+			last, err1 := vm.evaluationStack.Pop()
+			secondLast, err2 := vm.evaluationStack.Pop()
+			if !vm.checkErrors(opCode.Name, err1, err2) {
+				return false
+			}
+
+			err1 = vm.evaluationStack.Push(last)
+			err2 = vm.evaluationStack.Push(secondLast)
+			if !vm.checkErrors(opCode.Name, err1, err2) {
+				return false
+			}
 		case Pop:
 			_, rerr := vm.PopBytes(opCode)
 			if !vm.checkErrors(opCode.Name, rerr) {

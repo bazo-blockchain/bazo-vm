@@ -9,6 +9,7 @@ const (
 	Push
 	Dup
 	Roll
+	Swap
 	Pop
 	Add
 	Sub
@@ -91,6 +92,7 @@ var OpCodes = []OpCode{
 	{Push, "push", 1, []int{BYTES}, 1, 1},
 	{Dup, "dup", 0, nil, 1, 2},
 	{Roll, "roll", 1, []int{BYTE}, 1, 2},
+	{Swap, "swap", 0, nil, 1, 2},
 	{Pop, "pop", 0, nil, 1, 1},
 	{Add, "add", 0, nil, 1, 2},
 	{Sub, "sub", 0, nil, 1, 2},

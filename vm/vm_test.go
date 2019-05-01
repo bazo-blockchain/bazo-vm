@@ -1454,6 +1454,42 @@ func TestVM_Exec_Roll(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_Swap(t *testing.T) {
+	code := []byte{
+		Push, 1, 1,
+		Push, 1, 2,
+		Push, 1, 3,
+		Swap,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	last, err := vm.evaluationStack.Pop()
+	assert.NilError(t, err)
+	secondLast, err := vm.evaluationStack.Pop()
+	assert.NilError(t, err)
+
+	assertBytes(t, last, 2)
+	assertBytes(t, secondLast, 3)
+}
+
+func TestVM_Exec_SwapError(t *testing.T) {
+	code := []byte{
+		Push, 1, 1,
+		Swap,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	errMsg, err := vm.evaluationStack.Pop()
+	assert.NilError(t, err)
+	assert.Equal(t, string(errMsg), "swap: pop() on empty stack")
+}
+
 func TestVM_Exec_NewMap(t *testing.T) {
 	code := []byte{
 		NewMap,
