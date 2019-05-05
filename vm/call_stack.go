@@ -8,6 +8,7 @@ type Frame struct {
 	variables       map[int][]byte
 	nrOfReturnTypes int
 	returnAddress   int
+	evalStackOffset int
 }
 
 type CallStack struct {

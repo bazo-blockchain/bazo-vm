@@ -1062,6 +1062,39 @@ func TestVM_Exec_Call(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_CallRetEval(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 5,
+		PushInt, 1, 0, 10,
+		PushInt, 1, 0, 8,
+		Call, 0, 19, 2, 1,
+		Add,
+		Halt,
+		LoadLoc, 0, // Begin of called function at address 19
+		LoadLoc, 1,
+		Sub,
+		Ret,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	tos, _ := vm.evaluationStack.Pop()
+
+	expected := 7
+	actual := ByteArrayToInt(tos)
+
+	if expected != actual {
+		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
+	}
+
+	expected = 0
+	actual = vm.callStack.GetLength()
+	if expected != actual {
+		t.Errorf("After calling and returning, callStack length should be %v, but was %v", expected, actual)
+	}
+}
+
 func TestVM_Exec_Callif_true(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 10,
@@ -2756,7 +2789,7 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 
 		// Address 44
 		// Order: counter, modulus, base, exp, i, modulus, base
-		Call, 0, 73, 3, 5,
+		Call, 0, 73, 3, 1,
 		// PUT in order
 		Roll, 1,
 		Roll, 1,
