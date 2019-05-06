@@ -631,6 +631,7 @@ func (vm *VM) Exec(trace bool) bool {
 					return false
 				}
 			}
+			frame.evalStackOffset = len(vm.evaluationStack.Stack)
 
 			vm.callStack.Push(frame)
 			vm.pc = int(returnAddress.Int64())
@@ -674,6 +675,7 @@ func (vm *VM) Exec(trace bool) bool {
 						return false
 					}
 				}
+				frame.evalStackOffset = len(vm.evaluationStack.Stack)
 				vm.callStack.Push(frame)
 				vm.pc = int(returnAddress.Int64())
 			}
@@ -698,7 +700,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			if vm.evaluationStack.GetLength() != callstackTos.nrOfReturnTypes {
+			if (vm.evaluationStack.GetLength() - callstackTos.evalStackOffset) != callstackTos.nrOfReturnTypes {
 				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": Number of returned elements does not match."))
 				return false
 			}
