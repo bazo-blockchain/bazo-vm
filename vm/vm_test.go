@@ -1265,6 +1265,35 @@ func TestVM_Exec_StoreSt(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_StoreSt2(t *testing.T) {
+	code := []byte{
+		Push, 1, 2,
+		StoreSt, 0,
+		Push, 1, 3,
+		StoreSt, 0,
+		Halt,
+	}
+
+	vm := NewTestVM([]byte{})
+	mc := NewMockContext(code)
+	mc.ContractVariables = [][]byte{{1}}
+	vm.context = mc
+	mc.Fee = 100000
+	vm.Exec(false)
+
+	// Original contract variable remains unchanged
+	assertBytes(t, mc.ContractVariables[0], 1)
+
+	// GetContractVariables checks for changes
+	v, err := vm.context.GetContractVariable(0)
+	assert.NilError(t, err)
+	assertBytes(t, v, 3)
+
+	// After changes are persisted, contract variable should be up-to-date
+	mc.PersistChanges()
+	assertBytes(t, mc.ContractVariables[0], 3)
+}
+
 func TestVM_Exec_Address(t *testing.T) {
 	code := []byte{
 		Address,
