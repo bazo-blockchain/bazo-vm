@@ -2932,7 +2932,7 @@ func TestArrayLengthEmptyArray(t *testing.T) {
 
 func TestArrayLength(t *testing.T) {
 	code := []byte{
-		Push, 2, 0xFF, 0x00,
+		PushInt, 1, 0, 2,
 		NewArr,
 		ArrAppend,
 		ArrLen,
@@ -2953,8 +2953,8 @@ func TestArrayLength(t *testing.T) {
 
 func TestArrayLengthMultipleElements(t *testing.T) {
 	code := []byte{
-		Push, 2, 0xFF, 0x00, // will be appended at index 1
-		Push, 2, 0xFF, 0x01, // will be appended at index 0
+		PushInt, 1, 0, 2, // will be appended at index 1
+		PushInt, 1, 0, 1, // will be appended at index 0
 		NewArr,
 		ArrAppend,
 		ArrAppend,
