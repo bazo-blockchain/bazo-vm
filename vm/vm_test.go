@@ -1872,7 +1872,7 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 
 func TestVM_Exec_NewArr(t *testing.T) {
 	code := []byte{
-		NewArr,
+		NewArr, 0, 1,
 		Halt,
 	}
 
@@ -1890,17 +1890,16 @@ func TestVM_Exec_NewArr(t *testing.T) {
 	if err != nil {
 		t.Errorf("%v", err)
 	}
-	expectedSize := []byte{0x00, 0x00}
+	expectedSize := []byte{0x00, 0x01}
 	actualSize := arr[1:3]
 	if !bytes.Equal(expectedSize, actualSize) {
 		t.Errorf("invalid size, Expected %v but was '%v'", expectedSize, actualSize)
 	}
 }
 
-func TestVM_Exec_NewLenArrZero(t *testing.T) {
+func TestVM_Exec_NewArrZero(t *testing.T) {
 	code := []byte{
-		PushInt, 1, 0, 0,
-		NewLenArr,
+		NewArr, 0, 0,
 		ArrLen,
 		Halt,
 	}
@@ -1909,17 +1908,16 @@ func TestVM_Exec_NewLenArrZero(t *testing.T) {
 	assert.Assert(t, !isSuccess)
 
 	errorMessage, _ := vm.evaluationStack.Pop()
-	expectedErrorMessage := "newlenarr: invalid array length"
+	expectedErrorMessage := "newarr: invalid array length"
 
 	if string(errorMessage) != expectedErrorMessage {
 		t.Error("Invalid array length was not detected")
 	}
 }
 
-func TestVM_Exec_NewLenArr(t *testing.T) {
+func TestVM_Exec_NewArrWithoutInitialization(t *testing.T) {
 	code := []byte{
-		PushInt, 1, 0, 2,
-		NewLenArr,
+		NewArr, 0, 2,
 		ArrLen,
 		Halt,
 	}
@@ -1939,7 +1937,7 @@ func TestVM_Exec_NewLenArr(t *testing.T) {
 func TestVM_Exec_ArrAppend(t *testing.T) {
 	code := []byte{
 		Push, 2, 0xFF, 0x00,
-		NewArr,
+		NewArr, 0, 1,
 		ArrAppend,
 		Halt,
 	}
@@ -1948,6 +1946,7 @@ func TestVM_Exec_ArrAppend(t *testing.T) {
 	mc := NewMockContext(code)
 	vm.context = mc
 	exec := vm.Exec(false)
+	mc.PersistChanges()
 	if !exec {
 		errorMessage, _ := vm.evaluationStack.Pop()
 		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
@@ -1972,7 +1971,7 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 
 		Push, 1, 0xFE, // value [254] at index 1
 		Push, 1, 0xFF, // value [255] at index 0
-		NewArr,
+		NewArr, 0, 2,
 		ArrAppend,
 		ArrAppend,
 		ArrInsert, // Replace [255] with the new value [0,2]
@@ -1988,6 +1987,8 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 		errorMessage, _ := vm.evaluationStack.Pop()
 		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
 	}
+
+	mc.PersistChanges()
 
 	actual, err := vm.evaluationStack.Pop()
 	if err != nil {
@@ -2012,7 +2013,7 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 		Push, 2, 0xAA, 0x00,
 		Push, 2, 0xFF, 0x00,
 
-		NewArr,
+		NewArr, 0, 4,
 
 		ArrAppend,
 		ArrAppend,
@@ -2069,7 +2070,7 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 		Push, 2, 0xAA, 0x00,
 		Push, 2, 0xFF, 0x00,
 
-		NewArr,
+		NewArr, 0, 3,
 
 		ArrAppend,
 		ArrAppend,
@@ -2952,7 +2953,7 @@ func TestMultipleReturnValuesDifferentTypes(t *testing.T) {
 
 func TestArrayLengthEmptyArray(t *testing.T) {
 	code := []byte{
-		NewArr,
+		NewArr, 0, 0,
 		ArrLen,
 		Halt,
 	}
@@ -2972,7 +2973,7 @@ func TestArrayLengthEmptyArray(t *testing.T) {
 func TestArrayLength(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 2,
-		NewArr,
+		NewArr, 0, 1,
 		ArrAppend,
 		ArrLen,
 		Halt,
@@ -2994,7 +2995,7 @@ func TestArrayLengthMultipleElements(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 2, // will be appended at index 1
 		PushInt, 1, 0, 1, // will be appended at index 0
-		NewArr,
+		NewArr, 0, 2,
 		ArrAppend,
 		ArrAppend,
 		ArrLen,

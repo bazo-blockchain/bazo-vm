@@ -1030,18 +1030,15 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-		case NewLenArr:
-			// Fix for https://github.com/bazo-blockchain/bazo-vm/issues/40
-			// We will default initialize the array with a bytes array containing the value 0
-			a := NewArray()
-
-			lengthBytes, err := vm.PopBytes(opCode)
+		case NewArr:
+			lengthBytes, err := vm.fetchMany(opCode.Name, 2)
 
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
+			a := NewArray()
 			length, err := ByteArrayToUI16(lengthBytes)
 
 			if length <= 0 {
@@ -1055,16 +1052,13 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			for i := uint16(0); i < length; i++ {
-				err := a.Append([]byte{0})
+				err := a.Insert(i, []byte{0})
 				if err != nil {
 					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
 				}
 			}
 
-			vm.evaluationStack.Push(a)
-		case NewArr:
-			a := NewArray()
 			vm.evaluationStack.Push(a)
 		case ArrAppend:
 			a, aerr := vm.PopBytes(opCode)
