@@ -1041,18 +1041,13 @@ func (vm *VM) Exec(trace bool) bool {
 			a := NewArray()
 			length, err := ByteArrayToUI16(lengthBytes)
 
-			if length <= 0 {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": invalid array length"))
-				return false
-			}
-
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			for i := uint16(0); i < length; i++ {
-				err := a.Insert(i, []byte{0})
+				err := a.Append([]byte{0})
 				if err != nil {
 					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
