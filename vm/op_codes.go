@@ -52,6 +52,7 @@ const (
 	MapSetVal
 	MapRemove
 	NewArr
+	NewLenArr
 	ArrAppend
 	ArrInsert
 	ArrRemove
@@ -136,6 +137,7 @@ var OpCodes = []OpCode{
 	{MapSetVal, "mapsetval", 0, nil, 1, 2},
 	{MapRemove, "mapremove", 0, nil, 1, 2},
 	{NewArr, "newarr", 0, nil, 1, 2},
+	{NewLenArr, "newlenarr", 0, nil, 1, 2},
 	{ArrAppend, "arrappend", 0, nil, 1, 2},
 	{ArrInsert, "arrinsert", 0, nil, 1, 2},
 	{ArrRemove, "arrremove", 0, nil, 1, 2},

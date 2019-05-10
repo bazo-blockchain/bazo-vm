@@ -1897,6 +1897,45 @@ func TestVM_Exec_NewArr(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_NewLenArrZero(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 0,
+		NewLenArr,
+		ArrLen,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	errorMessage, _ := vm.evaluationStack.Pop()
+	expectedErrorMessage := "newlenarr: invalid array length"
+
+	if string(errorMessage) != expectedErrorMessage {
+		t.Error("Invalid array length was not detected")
+	}
+}
+
+func TestVM_Exec_NewLenArr(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 2,
+		NewLenArr,
+		ArrLen,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	length_bytes, _ := vm.evaluationStack.Pop()
+
+	length, _ := ByteArrayToUI16(length_bytes)
+
+	if length != 2 {
+		t.Errorf("Array length should be 2 but is %v", length)
+	}
+}
+
 func TestVM_Exec_ArrAppend(t *testing.T) {
 	code := []byte{
 		Push, 2, 0xFF, 0x00,
