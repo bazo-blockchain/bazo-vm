@@ -8,7 +8,7 @@ import (
 func TestStruct_NewStruct(t *testing.T) {
 	s := newStruct(2)
 	array := s.toArray()
-	size, err := array.getSize()
+	size, err := array.GetSize()
 
 	assert.NilError(t, err)
 	assert.Equal(t, size, uint16(2))

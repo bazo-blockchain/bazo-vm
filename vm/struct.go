@@ -39,7 +39,7 @@ func (s *Struct) loadField(index uint16) ([]byte, error) {
 // storeField sets the element on the given index
 func (s *Struct) storeField(index uint16, element []byte) error {
 	array := s.toArray()
-	size, err := array.getSize()
+	size, err := array.GetSize()
 	if err != nil {
 		return err
 	}

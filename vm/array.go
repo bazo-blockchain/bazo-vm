@@ -24,7 +24,7 @@ func ArrayFromByteArray(arr []byte) (Array, error) {
 	return Array(arr), nil
 }
 
-func (a *Array) getSize() (uint16, error) {
+func (a *Array) GetSize() (uint16, error) {
 	if len(*a) < 3 {
 		return 0, errors.New("not a valid array")
 	}
@@ -36,14 +36,14 @@ func (a *Array) getSize() (uint16, error) {
 }
 
 func (a *Array) setSize(ba []byte) {
-	//No checks because it is always used with getSize,
-	//If the array is incorrect, getSize() should already have noticed
+	//No checks because it is always used with GetSize,
+	//If the array is incorrect, GetSize() should already have noticed
 	(*a)[1] = ba[0]
 	(*a)[2] = ba[1]
 }
 
 func (a *Array) IncrementSize() error {
-	s, err := a.getSize()
+	s, err := a.GetSize()
 	if err != nil {
 		return errors.New("could not increase size")
 	}
@@ -53,7 +53,7 @@ func (a *Array) IncrementSize() error {
 }
 
 func (a *Array) DecrementSize() error {
-	s, err := a.getSize()
+	s, err := a.GetSize()
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func (a *Array) Remove(index uint16) error {
 func (a *Array) goToIndex(index uint16, f action) ([]byte, error) {
 	var offset uint16 = 3
 
-	size, err := a.getSize()
+	size, err := a.GetSize()
 	if err != nil {
 		return []byte{}, err
 	}
