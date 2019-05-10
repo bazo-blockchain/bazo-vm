@@ -112,7 +112,7 @@ func TestArray_Insert(t *testing.T) {
 		t.Errorf("Invalid element, expected %v after insert at pos 0 but got %v", expected1, actual1)
 	}
 
-	size, _ := a.getSize()
+	size, _ := a.GetSize()
 	if size != uint16(3) {
 		t.Errorf("Expected Array size to be 3 but got %v", size)
 	}
@@ -132,7 +132,7 @@ func TestArray_Append(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	size, err := a.getSize()
+	size, err := a.GetSize()
 	if size != 2 || err != nil {
 		t.Errorf("Invalid Array Size, Expected 1 after append but got %v", size)
 	}
@@ -154,7 +154,7 @@ func TestArray_Remove(t *testing.T) {
 
 	a.Remove(1)
 
-	size, err := a.getSize()
+	size, err := a.GetSize()
 	if size != 1 || err != nil {
 		t.Errorf("Invalid Array Size, Expected 1 after appending 2 elements and removing one but got %v", size)
 	}

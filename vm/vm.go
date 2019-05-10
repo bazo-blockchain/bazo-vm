@@ -1095,7 +1095,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			size, err := arr.getSize()
+			size, err := arr.GetSize()
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -1192,6 +1192,33 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			err = vm.evaluationStack.Push(element)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+		case ArrLen:
+			a, err := vm.PopBytes(opCode)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			arr, err := ArrayFromByteArray(a)
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			length, err := arr.GetSize()
+			if err != nil {
+				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			lengthBytes := UInt16ToByteArray(length)
+
+			err = vm.evaluationStack.Push(lengthBytes)
+
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false

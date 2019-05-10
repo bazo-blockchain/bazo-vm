@@ -2003,7 +2003,7 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 		t.Errorf("%v", err)
 	}
 
-	size, err := arr.getSize()
+	size, err := arr.GetSize()
 	if err != nil {
 		t.Error(err)
 	}
@@ -2081,7 +2081,7 @@ func TestVM_Exec_NewStr(t *testing.T) {
 	assert.Assert(t, str != nil)
 
 	arr := str.toArray()
-	size, sizeErr := arr.getSize()
+	size, sizeErr := arr.GetSize()
 	assert.NilError(t, sizeErr)
 	assert.Equal(t, size, uint16(2))
 }
@@ -2908,6 +2908,69 @@ func TestMultipleReturnValuesDifferentTypes(t *testing.T) {
 			firstExpected,
 			secondExpected,
 		)
+	}
+}
+
+func TestArrayLengthEmptyArray(t *testing.T) {
+	code := []byte{
+		NewArr,
+		ArrLen,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	length_bytes, _ := vm.evaluationStack.Pop()
+
+	length, _ := ByteArrayToUI16(length_bytes)
+
+	if length != 0 {
+		t.Errorf("Array length should be 0 but is %v", length)
+	}
+}
+
+func TestArrayLength(t *testing.T) {
+	code := []byte{
+		Push, 2, 0xFF, 0x00,
+		NewArr,
+		ArrAppend,
+		ArrLen,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	length_bytes, _ := vm.evaluationStack.Pop()
+
+	length, _ := ByteArrayToUI16(length_bytes)
+
+	if length != 1 {
+		t.Errorf("Array length should be 1 but is %v", length)
+	}
+}
+
+func TestArrayLengthMultipleElements(t *testing.T) {
+	code := []byte{
+		Push, 2, 0xFF, 0x00, // will be appended at index 1
+		Push, 2, 0xFF, 0x01, // will be appended at index 0
+		NewArr,
+		ArrAppend,
+		ArrAppend,
+		ArrLen,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	length_bytes, _ := vm.evaluationStack.Pop()
+
+	length, _ := ByteArrayToUI16(length_bytes)
+
+	if length != 2 {
+		t.Errorf("Array length should be 2 but is %v", length)
 	}
 }
 
