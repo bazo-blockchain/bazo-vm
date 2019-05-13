@@ -1031,7 +1031,7 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case NewArr:
-			lengthBytes, err := vm.fetchMany(opCode.Name, 2)
+			length, err := vm.PopUnsignedBigInt(opCode)
 
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
@@ -1039,14 +1039,13 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 			a := NewArray()
-			length, err := ByteArrayToUI16(lengthBytes)
 
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			for i := uint16(0); i < length; i++ {
+			for i := big.NewInt(0); i.Cmp(&length) == -1; i.Add(i, big.NewInt(1)) {
 				err := a.Append([]byte{0})
 				if err != nil {
 					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))

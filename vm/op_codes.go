@@ -135,7 +135,7 @@ var OpCodes = []OpCode{
 	{MapGetVal, "mapgetval", 0, nil, 1, 2},
 	{MapSetVal, "mapsetval", 0, nil, 1, 2},
 	{MapRemove, "mapremove", 0, nil, 1, 2},
-	{NewArr, "newarr", 1, []int{BYTE}, 1, 2},
+	{NewArr, "newarr", 0, nil, 1, 2},
 	{ArrAppend, "arrappend", 0, nil, 1, 2},
 	{ArrInsert, "arrinsert", 0, nil, 1, 2},
 	{ArrRemove, "arrremove", 0, nil, 1, 2},
