@@ -1909,9 +1909,9 @@ func TestVM_Exec_NewArrWithoutInitialization(t *testing.T) {
 	vm, isSuccess := execCode(code)
 	assert.Assert(t, isSuccess)
 
-	length_bytes, _ := vm.evaluationStack.Pop()
+	lengthBytes, _ := vm.evaluationStack.Pop()
 
-	length, _ := ByteArrayToUI16(length_bytes)
+	length, _ := ByteArrayToUI16(lengthBytes)
 
 	if length != 2 {
 		t.Errorf("Array length should be 2 but is %v", length)
@@ -2950,13 +2950,37 @@ func TestNewArrayFromLengthOnStack(t *testing.T) {
 	vm, isSuccess := execCode(code)
 	assert.Assert(t, isSuccess)
 
-	length_bytes, _ := vm.evaluationStack.Pop()
+	lengthBytes, _ := vm.evaluationStack.Pop()
 
-	length, _ := ByteArrayToUI16(length_bytes)
+	length, _ := ByteArrayToUI16(lengthBytes)
 
 	if length != 2 {
 		t.Errorf("Array length should be 2 but is %v", length)
 	}
+}
+
+func TestArrayInsert(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 2,
+		PushInt, 1, 0, 0,
+		PushInt, 1, 0, 1,
+		NewArr,
+		ArrInsert,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	arrayBytes, _ := vm.evaluationStack.Pop()
+
+	offset := 3
+	numberOfBytes := 2
+	arrayValue := ByteArrayToInt(arrayBytes[0+offset : 0+offset+numberOfBytes])
+	if arrayValue != 2 {
+		t.Errorf("Expected value at position 0 to be 2 but was %v", arrayValue)
+	}
+
 }
 
 func TestArrayLength(t *testing.T) {
@@ -2972,9 +2996,9 @@ func TestArrayLength(t *testing.T) {
 	vm, isSuccess := execCode(code)
 	assert.Assert(t, isSuccess)
 
-	length_bytes, _ := vm.evaluationStack.Pop()
+	lengthBytes, _ := vm.evaluationStack.Pop()
 
-	length, _ := ByteArrayToUI16(length_bytes)
+	length, _ := ByteArrayToUI16(lengthBytes)
 
 	if length != 1 {
 		t.Errorf("Array length should be 1 but is %v", length)
@@ -2996,9 +3020,9 @@ func TestArrayLengthMultipleElements(t *testing.T) {
 	vm, isSuccess := execCode(code)
 	assert.Assert(t, isSuccess)
 
-	length_bytes, _ := vm.evaluationStack.Pop()
+	lengthBytes, _ := vm.evaluationStack.Pop()
 
-	length, _ := ByteArrayToUI16(length_bytes)
+	length, _ := ByteArrayToUI16(lengthBytes)
 
 	if length != 2 {
 		t.Errorf("Array length should be 2 but is %v", length)
