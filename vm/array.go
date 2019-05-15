@@ -74,20 +74,35 @@ func (a *Array) At(index uint16) ([]byte, error) {
 	return result, err
 }
 
+// Insert sets an element at a certain index of the array
 func (a *Array) Insert(index uint16, element []byte) error {
+	// First remove the current element at the index
 	err := a.Remove(index)
 	if err != nil {
 		return err
 	}
 
-	var f action = func(array *Array, i uint16, s uint16) ([]byte, error) {
-		tmp := Array{}
-		tmp = append(tmp, (*a)[:i]...)
-		tmp.Append(element)
-		*a = append(tmp, (*a)[i:]...)
-		return []byte{}, nil
+	arraySize, err := a.GetSize()
+
+	if err != nil {
+		return err
 	}
-	_, err = a.goToIndex(index, f)
+
+	// The last element can directly be appended
+	if arraySize == index {
+		err = a.Append(element)
+
+	} else {
+		var f action = func(array *Array, i uint16, s uint16) ([]byte, error) {
+			tmp := Array{}
+			tmp = append(tmp, (*a)[:i]...)
+			err := tmp.Append(element)
+			*a = append(tmp, (*a)[i:]...)
+			return []byte{}, err
+		}
+		_, err = a.goToIndex(index, f)
+	}
+
 	return err
 }
 
@@ -104,7 +119,9 @@ func (a *Array) Append(ba []byte) error {
 	return err
 }
 
+// Remove removes the element with the given index from the array
 func (a *Array) Remove(index uint16) error {
+	// This function actually removes the element at the given index from the array
 	var f action = func(array *Array, k uint16, s uint16) ([]byte, error) {
 		tmp := Array{}
 		tmp = append(tmp, (*a)[:k]...)

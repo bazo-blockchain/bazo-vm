@@ -47,15 +47,5 @@ func (s *Struct) storeField(index uint16, element []byte) error {
 	if index >= size {
 		return errors.New("index out of bounds")
 	}
-
-	// Array insert does not work for an array with size = 1
-	if size == index+1 {
-		err := array.Remove(index)
-		if err != nil {
-			return err
-		}
-		err = array.Append(element)
-		return err
-	}
 	return array.Insert(index, element)
 }

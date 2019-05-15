@@ -1031,9 +1031,28 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case NewArr:
-			a := NewArray()
-			vm.evaluationStack.Push(a)
+			length, err := vm.PopUnsignedBigInt(opCode)
 
+			if err != nil {
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+
+			a := NewArray()
+
+			for i := big.NewInt(0); i.Cmp(&length) == -1; i.Add(i, big.NewInt(1)) {
+				err := a.Append([]byte{0})
+				if err != nil {
+					_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+					return false
+				}
+			}
+
+			err = vm.evaluationStack.Push(a)
+			if err != nil {
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
 		case ArrAppend:
 			a, aerr := vm.PopBytes(opCode)
 			v, verr := vm.PopBytes(opCode)

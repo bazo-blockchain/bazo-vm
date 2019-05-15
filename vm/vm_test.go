@@ -1872,6 +1872,7 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 
 func TestVM_Exec_NewArr(t *testing.T) {
 	code := []byte{
+		PushInt, 1, 0, 1,
 		NewArr,
 		Halt,
 	}
@@ -1890,16 +1891,37 @@ func TestVM_Exec_NewArr(t *testing.T) {
 	if err != nil {
 		t.Errorf("%v", err)
 	}
-	expectedSize := []byte{0x00, 0x00}
+	expectedSize := []byte{0x00, 0x01}
 	actualSize := arr[1:3]
 	if !bytes.Equal(expectedSize, actualSize) {
 		t.Errorf("invalid size, Expected %v but was '%v'", expectedSize, actualSize)
 	}
 }
 
+func TestVM_Exec_NewArrWithoutInitialization(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 2,
+		NewArr,
+		ArrLen,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	lengthBytes, _ := vm.evaluationStack.Pop()
+
+	length, _ := ByteArrayToUI16(lengthBytes)
+
+	if length != 2 {
+		t.Errorf("Array length should be 2 but is %v", length)
+	}
+}
+
 func TestVM_Exec_ArrAppend(t *testing.T) {
 	code := []byte{
 		Push, 2, 0xFF, 0x00,
+		PushInt, 1, 0, 0,
 		NewArr,
 		ArrAppend,
 		Halt,
@@ -1909,6 +1931,7 @@ func TestVM_Exec_ArrAppend(t *testing.T) {
 	mc := NewMockContext(code)
 	vm.context = mc
 	exec := vm.Exec(false)
+	mc.PersistChanges()
 	if !exec {
 		errorMessage, _ := vm.evaluationStack.Pop()
 		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
@@ -1933,6 +1956,7 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 
 		Push, 1, 0xFE, // value [254] at index 1
 		Push, 1, 0xFF, // value [255] at index 0
+		PushInt, 1, 0, 0,
 		NewArr,
 		ArrAppend,
 		ArrAppend,
@@ -1949,6 +1973,8 @@ func TestVM_Exec_ArrInsert(t *testing.T) {
 		errorMessage, _ := vm.evaluationStack.Pop()
 		t.Errorf("VM.Exec terminated with Error: %v", string(errorMessage))
 	}
+
+	mc.PersistChanges()
 
 	actual, err := vm.evaluationStack.Pop()
 	if err != nil {
@@ -1973,6 +1999,7 @@ func TestVM_Exec_ArrRemove(t *testing.T) {
 		Push, 2, 0xAA, 0x00,
 		Push, 2, 0xFF, 0x00,
 
+		PushInt, 1, 0, 0,
 		NewArr,
 
 		ArrAppend,
@@ -2030,6 +2057,7 @@ func TestVM_Exec_ArrAt(t *testing.T) {
 		Push, 2, 0xAA, 0x00,
 		Push, 2, 0xFF, 0x00,
 
+		PushInt, 1, 0, 0,
 		NewArr,
 
 		ArrAppend,
@@ -2911,8 +2939,9 @@ func TestMultipleReturnValuesDifferentTypes(t *testing.T) {
 	}
 }
 
-func TestArrayLengthEmptyArray(t *testing.T) {
+func TestNewArrayFromLengthOnStack(t *testing.T) {
 	code := []byte{
+		PushInt, 1, 0, 2,
 		NewArr,
 		ArrLen,
 		Halt,
@@ -2921,18 +2950,43 @@ func TestArrayLengthEmptyArray(t *testing.T) {
 	vm, isSuccess := execCode(code)
 	assert.Assert(t, isSuccess)
 
-	length_bytes, _ := vm.evaluationStack.Pop()
+	lengthBytes, _ := vm.evaluationStack.Pop()
 
-	length, _ := ByteArrayToUI16(length_bytes)
+	length, _ := ByteArrayToUI16(lengthBytes)
 
-	if length != 0 {
-		t.Errorf("Array length should be 0 but is %v", length)
+	if length != 2 {
+		t.Errorf("Array length should be 2 but is %v", length)
 	}
+}
+
+func TestArrayInsert(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 2,
+		PushInt, 1, 0, 0,
+		PushInt, 1, 0, 1,
+		NewArr,
+		ArrInsert,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	arrayBytes, _ := vm.evaluationStack.Pop()
+
+	offset := 3
+	numberOfBytes := 2
+	arrayValue := ByteArrayToInt(arrayBytes[0+offset : 0+offset+numberOfBytes])
+	if arrayValue != 2 {
+		t.Errorf("Expected value at position 0 to be 2 but was %v", arrayValue)
+	}
+
 }
 
 func TestArrayLength(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 2,
+		PushInt, 1, 0, 0,
 		NewArr,
 		ArrAppend,
 		ArrLen,
@@ -2942,9 +2996,9 @@ func TestArrayLength(t *testing.T) {
 	vm, isSuccess := execCode(code)
 	assert.Assert(t, isSuccess)
 
-	length_bytes, _ := vm.evaluationStack.Pop()
+	lengthBytes, _ := vm.evaluationStack.Pop()
 
-	length, _ := ByteArrayToUI16(length_bytes)
+	length, _ := ByteArrayToUI16(lengthBytes)
 
 	if length != 1 {
 		t.Errorf("Array length should be 1 but is %v", length)
@@ -2955,6 +3009,7 @@ func TestArrayLengthMultipleElements(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 2, // will be appended at index 1
 		PushInt, 1, 0, 1, // will be appended at index 0
+		PushInt, 1, 0, 0,
 		NewArr,
 		ArrAppend,
 		ArrAppend,
@@ -2965,9 +3020,9 @@ func TestArrayLengthMultipleElements(t *testing.T) {
 	vm, isSuccess := execCode(code)
 	assert.Assert(t, isSuccess)
 
-	length_bytes, _ := vm.evaluationStack.Pop()
+	lengthBytes, _ := vm.evaluationStack.Pop()
 
-	length, _ := ByteArrayToUI16(length_bytes)
+	length, _ := ByteArrayToUI16(lengthBytes)
 
 	if length != 2 {
 		t.Errorf("Array length should be 2 but is %v", length)
