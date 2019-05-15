@@ -1048,7 +1048,11 @@ func (vm *VM) Exec(trace bool) bool {
 				}
 			}
 
-			vm.evaluationStack.Push(a)
+			err = vm.evaluationStack.Push(a)
+			if err != nil {
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
 		case ArrAppend:
 			a, aerr := vm.PopBytes(opCode)
 			v, verr := vm.PopBytes(opCode)
