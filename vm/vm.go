@@ -1034,21 +1034,16 @@ func (vm *VM) Exec(trace bool) bool {
 			length, err := vm.PopUnsignedBigInt(opCode)
 
 			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
 			a := NewArray()
 
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
 			for i := big.NewInt(0); i.Cmp(&length) == -1; i.Add(i, big.NewInt(1)) {
 				err := a.Append([]byte{0})
 				if err != nil {
-					vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+					_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 					return false
 				}
 			}

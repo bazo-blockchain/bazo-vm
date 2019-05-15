@@ -96,9 +96,9 @@ func (a *Array) Insert(index uint16, element []byte) error {
 		var f action = func(array *Array, i uint16, s uint16) ([]byte, error) {
 			tmp := Array{}
 			tmp = append(tmp, (*a)[:i]...)
-			tmp.Append(element)
+			err := tmp.Append(element)
 			*a = append(tmp, (*a)[i:]...)
-			return []byte{}, nil
+			return []byte{}, err
 		}
 		_, err = a.goToIndex(index, f)
 	}
