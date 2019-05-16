@@ -123,7 +123,7 @@ func SignedByteArrayConversion(bi big.Int) []byte {
 
 func BigIntToByteArray(value big.Int) []byte {
 	var result []byte
-	if value.IsUint64() == true {
+	if value.IsUint64() {
 		result = append(result, 0) // signing byte
 	} else {
 		result = append(result, 1) // signing byte
@@ -139,7 +139,7 @@ func BigIntToPushableBytes(element big.Int) []byte {
 	var baseVal []byte
 	baseVal = append(baseVal, baseLength)
 
-	if element.IsUint64() == true {
+	if element.IsUint64() {
 		baseVal = append(baseVal, 0) // signing byte
 	} else {
 		baseVal = append(baseVal, 1) // signing byte
