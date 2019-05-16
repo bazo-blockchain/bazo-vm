@@ -1,6 +1,9 @@
 package vm
 
 import (
+	"fmt"
+	"gotest.tools/assert"
+	"math/big"
 	"testing"
 )
 
@@ -86,4 +89,67 @@ func TestUtils_ByteArrayToInt(t *testing.T) {
 	if expected != actual {
 		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
 	}
+}
+
+func TestUtils_Uint16ToBigInt_Minimum(t *testing.T) {
+	var value uint16 = 0
+	result := UInt16ToBigInt(value)
+	assert.Equal(t, result.Cmp(big.NewInt(0)), 0)
+}
+
+func TestUtils_Uint16ToBigInt(t *testing.T) {
+	var value uint16 = 1
+	result := UInt16ToBigInt(value)
+	assert.Equal(t, result.Cmp(big.NewInt(int64(1))), 0)
+}
+
+func TestUtils_Uint16ToBigInt_Maximum(t *testing.T) {
+	var value = UINT16_MAX
+	result := UInt16ToBigInt(value)
+	assert.Equal(t, result.Cmp(big.NewInt(int64(UINT16_MAX))), 0)
+}
+
+func TestUtils_BigIntToUInt16_Negative(t *testing.T) {
+	value := big.NewInt(-1)
+	result, err := BigIntToUInt16(*value)
+	assert.NilError(t, err)
+	assert.Equal(t, result, uint16(1))
+}
+
+func TestUtils_BigIntToUInt16_Zero(t *testing.T) {
+	value := big.NewInt(0)
+	result, err := BigIntToUInt16(*value)
+	assert.NilError(t, err)
+	assert.Equal(t, result, uint16(0))
+}
+
+func TestUtils_BigIntToUInt16_Positive(t *testing.T) {
+	value := big.NewInt(1)
+	result, err := BigIntToUInt16(*value)
+	assert.NilError(t, err)
+	assert.Equal(t, result, uint16(1))
+}
+
+func TestUtils_BigIntToUInt16_Greater_Than_UInt16(t *testing.T) {
+	value := big.NewInt(int64(UINT16_MAX) + 1)
+	_, err := BigIntToUInt16(*value)
+	assert.Equal(t, err.Error(), fmt.Sprintf("value cannot be greater than %v", UINT16_MAX))
+}
+
+func TestUtils_BigIntToByteArray_Zero(t *testing.T) {
+	value := big.NewInt(0)
+	result := BigIntToByteArray(*value)
+	assertBytes(t, result, 0)
+}
+
+func TestUtils_BigIntToByteArray_Negative(t *testing.T) {
+	value := big.NewInt(-2)
+	result := BigIntToByteArray(*value)
+	assertBytes(t, result, 1, 2)
+}
+
+func TestUtils_BigIntToByteArray_Positive(t *testing.T) {
+	value := big.NewInt(1)
+	result := BigIntToByteArray(*value)
+	assertBytes(t, result, 0, 1)
 }

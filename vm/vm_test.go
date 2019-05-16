@@ -2996,11 +2996,9 @@ func TestArrayLength(t *testing.T) {
 	vm, isSuccess := execCode(code)
 	assert.Assert(t, isSuccess)
 
-	lengthBytes, _ := vm.evaluationStack.Pop()
+	length, _ := vm.PopSignedBigInt(OpCodes[ArrLen])
 
-	length, _ := ByteArrayToUI16(lengthBytes)
-
-	if length != 1 {
+	if length.Cmp(big.NewInt(1)) != 0 {
 		t.Errorf("Array length should be 1 but is %v", length)
 	}
 }

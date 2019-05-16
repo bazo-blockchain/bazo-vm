@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 )
 
@@ -22,15 +23,30 @@ func UInt16ToByteArray(element uint16) []byte {
 	return ba
 }
 
+func UInt16ToBigInt(value uint16) big.Int {
+	return *big.NewInt(int64(value))
+}
+
+func BigIntToUInt16(value big.Int) (uint16, error) {
+	bytes := value.Bytes()
+
+	if len(bytes) == 1 {
+		bytes = []byte{0, bytes[0]}
+	}
+
+	return ByteArrayToUI16(bytes)
+}
+
 func ByteArrayToUI16(element []byte) (uint16, error) {
 	if bytes.Equal([]byte{}, element) {
 		return 0, nil
 	}
 	if len(element) != 2 {
-		return 0, errors.New("byte array to uint16 invalid parameters provided")
+		return 0, fmt.Errorf("value cannot be greater than %v", UINT16_MAX)
 	}
 
-	return binary.BigEndian.Uint16(element), nil
+	result := binary.BigEndian.Uint16(element)
+	return result, nil
 }
 
 func StrToBigInt(element string) big.Int {
@@ -102,6 +118,18 @@ func SignedByteArrayConversion(bi big.Int) []byte {
 	}
 	result = append(result, bi.Bytes()...)
 
+	return result
+}
+
+func BigIntToByteArray(value big.Int) []byte {
+	var result []byte
+	if value.IsUint64() == true {
+		result = append(result, 0) // signing byte
+	} else {
+		result = append(result, 1) // signing byte
+	}
+
+	result = append(result, value.Bytes()...) // value
 	return result
 }
 
