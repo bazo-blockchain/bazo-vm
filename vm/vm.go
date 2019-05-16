@@ -1085,14 +1085,9 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			i, err := vm.PopBytes(opCode)
+			i, err := vm.PopUnsignedBigInt(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
-			if len(i) > 2 {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": Wrong index size"))
 				return false
 			}
 
@@ -1108,7 +1103,7 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			index, err := ByteArrayToUI16(i)
+			index, err := BigIntToUInt16(i)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -1144,18 +1139,13 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			i, err := vm.PopBytes(opCode)
+			i, err := vm.PopUnsignedBigInt(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			if len(i) > 2 {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": Wrong index size"))
-				return false
-			}
-
-			index, err := ByteArrayToUI16(i)
+			index, err := BigIntToUInt16(i)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -1186,13 +1176,13 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			i, err := vm.PopBytes(opCode)
+			i, err := vm.PopUnsignedBigInt(opCode)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
-			index, err := ByteArrayToUI16(i)
+			index, err := BigIntToUInt16(i)
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
@@ -1233,8 +1223,8 @@ func (vm *VM) Exec(trace bool) bool {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
-
-			lengthBytes := UInt16ToByteArray(length)
+			lengthBigInt := UInt16ToBigInt(length)
+			lengthBytes := BigIntToByteArray(lengthBigInt)
 
 			err = vm.evaluationStack.Push(lengthBytes)
 
