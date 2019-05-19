@@ -1590,9 +1590,9 @@ func TestVM_Exec_MapHasKey_true(t *testing.T) {
 
 		NewMap,
 
-		MapPush,
-		MapPush,
-		MapPush,
+		MapSetVal,
+		MapSetVal,
+		MapSetVal,
 
 		MapHasKey,
 
@@ -1636,9 +1636,9 @@ func TestVM_Exec_MapHasKey_false(t *testing.T) {
 
 		NewMap,
 
-		MapPush,
-		MapPush,
-		MapPush,
+		MapSetVal,
+		MapSetVal,
+		MapSetVal,
 
 		MapHasKey,
 
@@ -1667,12 +1667,12 @@ func TestVM_Exec_MapHasKey_false(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_MapPush(t *testing.T) {
+func TestVM_Exec_MapSetVal(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 72, 105,
 		Push, 1, 0x03,
 		NewMap,
-		MapPush,
+		MapSetVal,
 		Halt,
 	}
 
@@ -1728,9 +1728,9 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 
 		NewMap,
 
-		MapPush,
-		MapPush,
-		MapPush,
+		MapSetVal,
+		MapSetVal,
+		MapSetVal,
 
 		MapGetVal,
 
@@ -1759,7 +1759,7 @@ func TestVM_Exec_MapGetVAL(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_MapSetVal(t *testing.T) {
+func TestVM_Exec_MapSetVal_Multiple(t *testing.T) {
 	code := []byte{
 		Push, 2, 0x55, 0x55, //Value to be reset by MAPSETVAL
 		Push, 1, 0x03,
@@ -1772,9 +1772,8 @@ func TestVM_Exec_MapSetVal(t *testing.T) {
 
 		NewMap,
 
-		MapPush,
-		MapPush,
-
+		MapSetVal,
+		MapSetVal,
 		MapSetVal,
 
 		Halt,
@@ -1828,9 +1827,9 @@ func TestVM_Exec_MapRemove(t *testing.T) {
 
 		NewMap,
 
-		MapPush,
-		MapPush,
-		MapPush,
+		MapSetVal,
+		MapSetVal,
+		MapSetVal,
 
 		MapRemove,
 		Halt,

@@ -894,43 +894,6 @@ func (vm *VM) Exec(trace bool) bool {
 
 			vm.evaluationStack.Push(BoolToByteArray(result))
 
-		case MapPush:
-			mba, err := vm.PopBytes(opCode)
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
-			k, err := vm.PopBytes(opCode)
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
-			v, err := vm.PopBytes(opCode)
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
-			m, err := MapFromByteArray(mba)
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
-			err = m.Append(k, v)
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
-			err = vm.evaluationStack.Push(m)
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
 		case MapGetVal:
 			mapAsByteArray, err := vm.PopBytes(opCode)
 			if err != nil {
@@ -987,7 +950,18 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
-			err = m.SetVal(k, v)
+			hasKey, err := m.MapContainsKey(k)
+			if err != nil {
+				vm.pushError(opCode, err)
+				return false
+			}
+
+			if hasKey {
+				err = m.SetVal(k, v)
+			} else {
+				err = m.Append(k, v)
+			}
+
 			if err != nil {
 				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
