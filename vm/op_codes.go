@@ -47,7 +47,6 @@ const (
 	CallData // Parameters and function signature hash
 	NewMap
 	MapHasKey
-	MapPush
 	MapGetVal
 	MapSetVal
 	MapRemove
@@ -131,7 +130,6 @@ var OpCodes = []OpCode{
 	{CallData, "calldata", 0, nil, 1, 1},
 	{NewMap, "newmap", 0, nil, 1, 2},
 	{MapHasKey, "maphaskey", 0, nil, 1, 2},
-	{MapPush, "mappush", 0, nil, 1, 2},
 	{MapGetVal, "mapgetval", 0, nil, 1, 2},
 	{MapSetVal, "mapsetval", 0, nil, 1, 2},
 	{MapRemove, "mapremove", 0, nil, 1, 2},
