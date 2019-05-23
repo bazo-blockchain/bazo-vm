@@ -904,20 +904,16 @@ func TestVM_Exec_ShiftL_Max(t *testing.T) {
 		Halt,
 	}
 
-	vm := NewTestVM([]byte{})
-	mc := NewMockContext(code)
-	vm.context = mc
-	isSuccess := vm.Exec(false)
-
+	vm, isSuccess := execCode(code)
 	tos, _ := vm.evaluationStack.Pop()
 	assert.Assert(t, isSuccess, string(tos))
-	actual := tos[1:] // remove sign byte, because it is 0
 
 	bigShift := big.NewInt(1)
 	bigShift.Lsh(bigShift, uint(4294967295))
 	expected := bigShift.Bytes() // without sign byte
 
-	assert.Equal(t, len(actual), len(expected)) // add 1 for sign byte
+	actual := tos[1:] // remove sign byte, because it is 0
+	assert.Equal(t, len(actual), len(expected))
 
 	// DO NOT compare 536870913 bytes in a for loop. It will take extremely long
 	result := bytes.Compare(actual, expected)
