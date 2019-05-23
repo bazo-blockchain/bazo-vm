@@ -962,6 +962,20 @@ func TestVM_Exec_BitwiseXor(t *testing.T) {
 	assert.Equal(t, bint.Cmp(big.NewInt(6)), 0)
 }
 
+func TestVM_Exec_BitwiseNot(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 5,
+		BitwiseNot,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+	assert.Equal(t, bint.Cmp(big.NewInt(-6)), 0)
+}
+
 func TestVM_Exec_Jmptrue(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 3,

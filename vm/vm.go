@@ -556,6 +556,18 @@ func (vm *VM) Exec(trace bool) bool {
 			if !isSuccess {
 				return false
 			}
+		case BitwiseNot:
+			bigInt, err := vm.PopSignedBigInt(opCode)
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
+
+			bigInt.Not(&bigInt)
+			err = vm.evaluationStack.Push(SignedByteArrayConversion(bigInt))
+
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
 
 		case NoOp:
 			_, err := vm.fetch(opCode.Name)
