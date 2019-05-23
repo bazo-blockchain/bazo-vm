@@ -29,6 +29,7 @@ type Context interface {
 	GetSig1() [64]byte
 }
 
+// VM is a stack-based virtual machine and executes the contract code sequentially.
 type VM struct {
 	code            []byte
 	pc              int // Program counter
@@ -38,6 +39,7 @@ type VM struct {
 	context         Context
 }
 
+// NewVM creates a new Bazo virtual machine with the context received from Bazo miner.
 func NewVM(context Context) VM {
 	return VM{
 		code:            []byte{},
@@ -49,6 +51,7 @@ func NewVM(context Context) VM {
 	}
 }
 
+// NewTestVM creates a new Bazo virtual machine with the test contract code.
 func NewTestVM(byteCode []byte) VM {
 	return VM{
 		code:            []byte{},
@@ -124,6 +127,7 @@ func (vm *VM) trace() {
 	fmt.Printf("%04d: %-6s %v \n", addr, opCode.Name, formattedArgs)
 }
 
+// Exec executes the contract code and stores the result on evaluation stack.
 func (vm *VM) Exec(trace bool) bool {
 	vm.code = vm.context.GetContract()
 	vm.fee = vm.context.GetFee()
@@ -323,50 +327,27 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case Add:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
+			isSuccess := vm.evaluateBigIntOperation(opCode, func(left *big.Int, right *big.Int) {
+				left.Add(left, right)
+			})
 
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			if !isSuccess {
 				return false
 			}
-
-			left.Add(&left, &right)
-			err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
-
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
 		case Sub:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
+			isSuccess := vm.evaluateBigIntOperation(opCode, func(left *big.Int, right *big.Int) {
+				left.Sub(left, right)
+			})
 
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
+			if !isSuccess {
 				return false
 			}
-
-			left.Sub(&left, &right)
-			err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
-
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
-				return false
-			}
-
 		case Mul:
-			right, rerr := vm.PopSignedBigInt(opCode)
-			left, lerr := vm.PopSignedBigInt(opCode)
+			isSuccess := vm.evaluateBigIntOperation(opCode, func(left *big.Int, right *big.Int) {
+				left.Mul(left, right)
+			})
 
-			if !vm.checkErrors(opCode.Name, rerr, lerr) {
-				return false
-			}
-
-			left.Mul(&left, &right)
-			err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
-
-			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+			if !isSuccess {
 				return false
 			}
 
@@ -532,7 +513,7 @@ func (vm *VM) Exec(trace bool) bool {
 			err = vm.evaluationStack.Push(SignedByteArrayConversion(tos))
 
 			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 				return false
 			}
 
@@ -548,7 +529,31 @@ func (vm *VM) Exec(trace bool) bool {
 			err = vm.evaluationStack.Push(SignedByteArrayConversion(tos))
 
 			if err != nil {
-				vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+				return false
+			}
+		case BitwiseAnd:
+			isSuccess := vm.evaluateBigIntOperation(opCode, func(left *big.Int, right *big.Int) {
+				left.And(left, right)
+			})
+
+			if !isSuccess {
+				return false
+			}
+		case BitwiseOr:
+			isSuccess := vm.evaluateBigIntOperation(opCode, func(left *big.Int, right *big.Int) {
+				left.Or(left, right)
+			})
+
+			if !isSuccess {
+				return false
+			}
+		case BitwiseXor:
+			isSuccess := vm.evaluateBigIntOperation(opCode, func(left *big.Int, right *big.Int) {
+				left.Xor(left, right)
+			})
+
+			if !isSuccess {
 				return false
 			}
 
@@ -1362,6 +1367,7 @@ func (vm *VM) pushError(opCode OpCode, err error) {
 	_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
 }
 
+// PopBytes pops bytes from the evaluation stack.
 func (vm *VM) PopBytes(opCode OpCode) (elements []byte, err error) {
 	bytes, err := vm.evaluationStack.Pop()
 	if err != nil {
@@ -1380,6 +1386,7 @@ func (vm *VM) PopBytes(opCode OpCode) (elements []byte, err error) {
 	return bytes, nil
 }
 
+// PopSignedBigInt pops bytes from evaluation stack and convert it to a big integer with sign.
 func (vm *VM) PopSignedBigInt(opCode OpCode) (bigInt big.Int, err error) {
 	bytes, err := vm.evaluationStack.Pop()
 	if err != nil {
@@ -1399,6 +1406,7 @@ func (vm *VM) PopSignedBigInt(opCode OpCode) (bigInt big.Int, err error) {
 	return result, err
 }
 
+// PopUnsignedBigInt pops bytes from evaluation stack and convert it to an unsigned big integer.
 func (vm *VM) PopUnsignedBigInt(opCode OpCode) (bigInt big.Int, err error) {
 	bytes, err := vm.evaluationStack.Pop()
 	if err != nil {
@@ -1435,12 +1443,33 @@ func (vm *VM) PeekEvalStack() [][]byte {
 	return copiedStack
 }
 
+// GetErrorMsg peeks bytes from evaluation stack and returns the error message.
 func (vm *VM) GetErrorMsg() string {
 	tos, err := vm.evaluationStack.PeekBytes()
 	if err != nil {
 		return "Peek on empty Stack"
 	}
 	return string(tos)
+}
+
+type bigIntAction func(left *big.Int, right *big.Int)
+
+func (vm *VM) evaluateBigIntOperation(opCode OpCode, exec bigIntAction) bool {
+	right, rerr := vm.PopSignedBigInt(opCode)
+	left, lerr := vm.PopSignedBigInt(opCode)
+
+	if !vm.checkErrors(opCode.Name, rerr, lerr) {
+		return false
+	}
+
+	exec(&left, &right)
+	err := vm.evaluationStack.Push(SignedByteArrayConversion(left))
+
+	if err != nil {
+		_ = vm.evaluationStack.Push([]byte(opCode.Name + ": " + err.Error()))
+		return false
+	}
+	return true
 }
 
 func (vm *VM) evaluateRelationalComp(opCode OpCode, expectedResult ...int) bool {

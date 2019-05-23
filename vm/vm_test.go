@@ -917,6 +917,51 @@ func TestVM_Exec_Shiftr(t *testing.T) {
 	}
 }
 
+func TestVM_Exec_BitwiseAnd(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 5,
+		PushInt, 1, 0, 3,
+		BitwiseAnd,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+	assert.Equal(t, bint.Cmp(big.NewInt(1)), 0)
+}
+
+func TestVM_Exec_BitwiseOr(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 5,
+		PushInt, 1, 0, 3,
+		BitwiseOr,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+	assert.Equal(t, bint.Cmp(big.NewInt(7)), 0)
+}
+
+func TestVM_Exec_BitwiseXor(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 5,
+		PushInt, 1, 0, 3,
+		BitwiseXor,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+	assert.Equal(t, bint.Cmp(big.NewInt(6)), 0)
+}
+
 func TestVM_Exec_Jmptrue(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 3,
