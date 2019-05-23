@@ -112,7 +112,7 @@ var OpCodes = []OpCode{
 	{LtEq, "lte", 0, nil, 1, 2},
 	{GtEq, "gte", 0, nil, 1, 2},
 	{ShiftL, "shiftl", 0, nil, 1, 2},
-	{ShiftR, "shiftl", 0, nil, 1, 2},
+	{ShiftR, "shiftr", 0, nil, 1, 2},
 	{BitwiseAnd, "bitwiseand", 0, nil, 1, 2},
 	{BitwiseOr, "bitwiseor", 0, nil, 1, 2},
 	{BitwiseXor, "bitwisexor", 0, nil, 1, 2},

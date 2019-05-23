@@ -509,6 +509,11 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 
+			if shiftsBigInt.Sign() == -1 {
+				vm.pushError(opCode, fmt.Errorf("negative shift operand is not allowed"))
+				return false
+			}
+
 			nrOfShifts, err := BigIntToUInt(shiftsBigInt)
 			if !vm.checkErrors(opCode.Name, err) {
 				return false
@@ -527,6 +532,11 @@ func (vm *VM) Exec(trace bool) bool {
 			tos, errStack := vm.PopSignedBigInt(opCode)
 
 			if !vm.checkErrors(opCode.Name, err, errStack) {
+				return false
+			}
+
+			if shiftsBigInt.Sign() == -1 {
+				vm.pushError(opCode, fmt.Errorf("negative shift operand is not allowed"))
 				return false
 			}
 

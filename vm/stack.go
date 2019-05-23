@@ -14,7 +14,7 @@ func NewStack() *Stack {
 	return &Stack{
 		Stack:       nil,
 		memoryUsage: 0,
-		memoryMax:   1000000, // Max 1000000 Bytes = 1MB
+		memoryMax:   600000000, // Max 6000000 Bytes = 6MB
 	}
 }
 
