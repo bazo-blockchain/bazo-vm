@@ -876,7 +876,8 @@ func TestVM_Exec_GtEq_Char(t *testing.T) {
 func TestVM_Exec_Shiftl(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 1,
-		ShiftL, 3,
+		PushInt, 1, 0, 3,
+		ShiftL,
 		Halt,
 	}
 
@@ -898,7 +899,8 @@ func TestVM_Exec_Shiftl(t *testing.T) {
 func TestVM_Exec_Shiftr(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 8,
-		ShiftR, 3,
+		PushInt, 1, 0, 3,
+		ShiftR,
 		Halt,
 	}
 
@@ -973,6 +975,8 @@ func TestVM_Exec_BitwiseNot(t *testing.T) {
 	assert.Assert(t, isSuccess)
 
 	bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+
+	// Use http://bitwisecmd.com/ to check the conversion visually.
 	assert.Equal(t, bint.Cmp(big.NewInt(-6)), 0)
 }
 

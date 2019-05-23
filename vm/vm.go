@@ -502,14 +502,19 @@ func (vm *VM) Exec(trace bool) bool {
 				return false
 			}
 		case ShiftL:
-			nrOfShifts, errArg := vm.fetch(opCode.Name)
+			shiftsBigInt, err := vm.PopSignedBigInt(opCode)
 			tos, errStack := vm.PopSignedBigInt(opCode)
 
-			if !vm.checkErrors(opCode.Name, errArg, errStack) {
+			if !vm.checkErrors(opCode.Name, err, errStack) {
 				return false
 			}
 
-			tos.Lsh(&tos, uint(nrOfShifts))
+			nrOfShifts, err := BigIntToUInt(shiftsBigInt)
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
+
+			tos.Lsh(&tos, nrOfShifts)
 			err = vm.evaluationStack.Push(SignedByteArrayConversion(tos))
 
 			if err != nil {
@@ -518,14 +523,19 @@ func (vm *VM) Exec(trace bool) bool {
 			}
 
 		case ShiftR:
-			nrOfShifts, errArg := vm.fetch(opCode.Name)
+			shiftsBigInt, err := vm.PopSignedBigInt(opCode)
 			tos, errStack := vm.PopSignedBigInt(opCode)
 
-			if !vm.checkErrors(opCode.Name, errArg, errStack) {
+			if !vm.checkErrors(opCode.Name, err, errStack) {
 				return false
 			}
 
-			tos.Rsh(&tos, uint(nrOfShifts))
+			nrOfShifts, err := BigIntToUInt(shiftsBigInt)
+			if !vm.checkErrors(opCode.Name, err) {
+				return false
+			}
+
+			tos.Rsh(&tos, nrOfShifts)
 			err = vm.evaluationStack.Push(SignedByteArrayConversion(tos))
 
 			if err != nil {
