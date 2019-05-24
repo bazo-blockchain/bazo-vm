@@ -37,6 +37,13 @@ func BigIntToUInt16(value big.Int) (uint16, error) {
 	return ByteArrayToUI16(bytes)
 }
 
+func BigIntToUInt(value big.Int) (uint, error) {
+	if len(value.Bytes()) > 4 {
+		return 0, fmt.Errorf("value cannot be greater than 32bits")
+	}
+	return uint(value.Uint64()), nil
+}
+
 func ByteArrayToUI16(element []byte) (uint16, error) {
 	if bytes.Equal([]byte{}, element) {
 		return 0, nil

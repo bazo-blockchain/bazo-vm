@@ -26,6 +26,10 @@ const (
 	GtEq
 	ShiftL
 	ShiftR
+	BitwiseAnd
+	BitwiseOr
+	BitwiseXor
+	BitwiseNot
 	NoOp
 	Jmp
 	JmpTrue
@@ -107,8 +111,12 @@ var OpCodes = []OpCode{
 	{Gt, "gt", 0, nil, 1, 2},
 	{LtEq, "lte", 0, nil, 1, 2},
 	{GtEq, "gte", 0, nil, 1, 2},
-	{ShiftL, "shiftl", 1, []int{BYTE}, 1, 2},
-	{ShiftR, "shiftl", 1, []int{BYTE}, 1, 2},
+	{ShiftL, "shiftl", 0, nil, 1, 2},
+	{ShiftR, "shiftr", 0, nil, 1, 2},
+	{BitwiseAnd, "bitwiseand", 0, nil, 1, 2},
+	{BitwiseOr, "bitwiseor", 0, nil, 1, 2},
+	{BitwiseXor, "bitwisexor", 0, nil, 1, 2},
+	{BitwiseNot, "bitwisenot", 0, nil, 1, 2},
 	{NoOp, "nop", 0, nil, 1, 1},
 	{Jmp, "jmp", 1, []int{LABEL}, 1, 1},
 	{JmpTrue, "jmptrue", 1, []int{LABEL}, 1, 1},

@@ -92,8 +92,7 @@ func TestUtils_ByteArrayToInt(t *testing.T) {
 }
 
 func TestUtils_Uint16ToBigInt_Minimum(t *testing.T) {
-	var value uint16 = 0
-	result := UInt16ToBigInt(value)
+	result := UInt16ToBigInt(0)
 	assert.Equal(t, result.Cmp(big.NewInt(0)), 0)
 }
 
@@ -135,6 +134,49 @@ func TestUtils_BigIntToUInt16_Greater_Than_UInt16(t *testing.T) {
 	_, err := BigIntToUInt16(*value)
 	assert.Equal(t, err.Error(), fmt.Sprintf("value cannot be greater than %v", UINT16_MAX))
 }
+
+// big.Int to uint
+// ---------------
+
+func TestUtils_BigIntToUInt_Zero(t *testing.T) {
+	value := big.NewInt(0)
+	result, err := BigIntToUInt(*value)
+	assert.NilError(t, err)
+	assert.Equal(t, result, uint(0))
+}
+
+func TestUtils_BigIntToUInt_Positive(t *testing.T) {
+	value := big.NewInt(10)
+	result, err := BigIntToUInt(*value)
+	assert.NilError(t, err)
+	assert.Equal(t, result, uint(10))
+}
+
+func TestUtils_BigIntToUInt_Negative(t *testing.T) {
+	value := big.NewInt(-10)
+	result, err := BigIntToUInt(*value)
+	assert.NilError(t, err)
+	assert.Equal(t, result, uint(10))
+}
+
+func TestUtils_BigIntToUInt_Max(t *testing.T) {
+	var max uint = 4294967295
+	value := big.NewInt(int64(max))
+	result, err := BigIntToUInt(*value)
+	assert.NilError(t, err)
+	assert.Equal(t, result, max)
+}
+
+func TestUtils_BigIntToUInt_Overflow(t *testing.T) {
+	max := int64(4294967295) + 1
+	value := big.NewInt(max)
+	_, err := BigIntToUInt(*value)
+
+	assert.Equal(t, err.Error(), "value cannot be greater than 32bits")
+}
+
+// big.Int to []byte
+// -----------------
 
 func TestUtils_BigIntToByteArray_Zero(t *testing.T) {
 	value := big.NewInt(0)

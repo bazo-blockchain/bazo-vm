@@ -873,10 +873,11 @@ func TestVM_Exec_GtEq_Char(t *testing.T) {
 	assertBytes(t, tos, 1)
 }
 
-func TestVM_Exec_Shiftl(t *testing.T) {
+func TestVM_Exec_ShiftL(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 1,
-		ShiftL, 3,
+		PushInt, 1, 0, 3,
+		ShiftL,
 		Halt,
 	}
 
@@ -895,10 +896,35 @@ func TestVM_Exec_Shiftl(t *testing.T) {
 	}
 }
 
-func TestVM_Exec_Shiftr(t *testing.T) {
+func TestVM_Exec_ShiftL_Max(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 1,
+		PushInt, 4, 0, 0xff, 0xff, 0xff, 0xff,
+		ShiftL,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	tos, _ := vm.evaluationStack.Pop()
+	assert.Assert(t, isSuccess, string(tos))
+
+	bigShift := big.NewInt(1)
+	bigShift.Lsh(bigShift, uint(4294967295))
+	expected := bigShift.Bytes() // without sign byte
+
+	actual := tos[1:] // remove sign byte, because it is 0
+	assert.Equal(t, len(actual), len(expected))
+
+	// DO NOT compare 536870913 bytes in a for loop. It will take extremely long
+	result := bytes.Compare(actual, expected)
+	assert.Equal(t, result, 0)
+}
+
+func TestVM_Exec_ShiftR(t *testing.T) {
 	code := []byte{
 		PushInt, 1, 0, 8,
-		ShiftR, 3,
+		PushInt, 1, 0, 3,
+		ShiftR,
 		Halt,
 	}
 
@@ -915,6 +941,82 @@ func TestVM_Exec_Shiftr(t *testing.T) {
 	if expected != actual {
 		t.Errorf("Expected result to be '%v' but was '%v'", expected, actual)
 	}
+}
+
+func TestVM_Exec_ShiftR_Negative(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 8,
+		PushInt, 1, 1, 3,
+		ShiftR,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, !isSuccess)
+
+	result, _ := vm.evaluationStack.Pop()
+	assert.Equal(t, string(result), "shiftr: negative shift operand is not allowed")
+}
+
+func TestVM_Exec_BitwiseAnd(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 5,
+		PushInt, 1, 0, 3,
+		BitwiseAnd,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+	assert.Equal(t, bint.Cmp(big.NewInt(1)), 0)
+}
+
+func TestVM_Exec_BitwiseOr(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 5,
+		PushInt, 1, 0, 3,
+		BitwiseOr,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+	assert.Equal(t, bint.Cmp(big.NewInt(7)), 0)
+}
+
+func TestVM_Exec_BitwiseXor(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 5,
+		PushInt, 1, 0, 3,
+		BitwiseXor,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+	assert.Equal(t, bint.Cmp(big.NewInt(6)), 0)
+}
+
+func TestVM_Exec_BitwiseNot(t *testing.T) {
+	code := []byte{
+		PushInt, 1, 0, 5,
+		BitwiseNot,
+		Halt,
+	}
+
+	vm, isSuccess := execCode(code)
+	assert.Assert(t, isSuccess)
+
+	bint, _ := vm.PopSignedBigInt(OpCodes[PushInt])
+
+	// Use http://bitwisecmd.com/ to check the conversion visually.
+	assert.Equal(t, bint.Cmp(big.NewInt(-6)), 0)
 }
 
 func TestVM_Exec_Jmptrue(t *testing.T) {
@@ -2850,7 +2952,7 @@ func TestVm_Exec_ModularExponentiation_ContractImplementation(t *testing.T) {
 	mc := NewMockContext(code)
 	mc.Fee = 1000
 	vm.context = mc
-	vm.Exec(true)
+	vm.Exec(false)
 
 	expected := 445
 	vm.evaluationStack.Pop()
