@@ -20,7 +20,7 @@ coins before this thesis. The idea of this work was to enhance the Bazo
 Blockchain with smart contracts.
 
 **Documents**
-* [Bazo VM - Bachelor Thesis 2018.pdf](https://github.com/bazo-blockchain/bazo-vm/releases/download/v1.0.0/BachelorThesis-VM-HSR-2018.pdf) 
+* [Bazo VM - Bachelor Thesis 2018.pdf](https://eprints.hsr.ch/682/1/FS%202018-BA-EP-Steiner-Meier-Integrating%20Smart%20Contracts%20into%20the%20Bazo%20Blockchain.pdf) 
 
 ## Development
 
@@ -32,10 +32,6 @@ Packages are managed by [Go Modules](https://github.com/golang/go/wiki/Modules).
 
 Set the environment variable `GO111MODULE=on` and run `go mod vendor` 
 to install all the dependencies into the local vendor directory.
-
-### Run Virtual Machine from Source
-
-TODO
 
 ### Run Unit Tests
 
@@ -51,3 +47,11 @@ To see the test coverage, run `./scripts/test.sh` and then open the **coverage.h
     
 It will run golint on all packages except the vendor directory.
 
+## Using Bazo VM with Lazo
+
+It is difficult to write Bazo bytecode manually. Therefore, it is recommended to use [Lazo](https://github.com/bazo-blockchain/lazo)
+language to generate byte automatically. To use VM with a Lazo program, run the following command:
+
+    lazo run program.lazo
+
+It will generate Bazo bytecode from source code and directly execute it on the VM.
