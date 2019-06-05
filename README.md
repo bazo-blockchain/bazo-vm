@@ -50,7 +50,7 @@ It will run golint on all packages except the vendor directory.
 ## Using Bazo VM with Lazo
 
 It is difficult to write Bazo bytecode manually. Therefore, it is recommended to use [Lazo](https://github.com/bazo-blockchain/lazo)
-language to generate byte automatically. To use VM with a Lazo program, run the following command:
+language to generate bytecode automatically. To use VM with a Lazo program, run the following command:
 
     lazo run program.lazo
 
